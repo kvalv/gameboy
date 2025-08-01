@@ -30,6 +30,10 @@ func (m *Memory) Append(p []byte) *Memory {
 	m.data = append(m.data, p...)
 	return m
 }
+
+func (m *Memory) WriteByteAt(off uint16, value byte) *Memory {
+	return m.WriteData(off, []byte{value})
+}
 func (m *Memory) WriteData(off uint16, p []byte) *Memory {
 	if len(m.data) < int(off)+len(p) {
 		newData := make([]byte, off+uint16(len(p)))

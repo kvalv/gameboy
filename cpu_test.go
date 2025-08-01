@@ -8,7 +8,11 @@ import (
 	"testing"
 )
 
-func TestCPUAdd(t *testing.T) {
+const (
+	INSTR_STOP = 0x01
+)
+
+func TestInstructions(t *testing.T) {
 
 	cases := []struct {
 		desc    string
@@ -83,7 +87,7 @@ func TestCPUAdd(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.WriteInstr(0x86)
-				m.WriteInstr(0x01)
+				m.WriteInstr(INSTR_STOP)
 				m.WriteData(0x1122, []byte{0x02})
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
@@ -104,6 +108,30 @@ func TestCPUAdd(t *testing.T) {
 				cpu.ExpectFlagCarry()
 				cpu.ExpectFlagZero()
 			},
+		},
+		{
+			desc: "INC (HL)",
+			cpu: &CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.WriteInstr(0x34)
+				m.WriteInstr(INSTR_STOP)
+				m.WriteByteAt(0x1122, 0x33)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectByte(0x1122, 0x34)
+			},
+		},
+		{
+			desc: "INC SP",
+			cpu:  &CPU{SP: 0x0011},
+			initMem: func(m *Memory) {
+				m.WriteInstr(0x33)
+				m.WriteInstr(INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) { cpu.ExpectSP(0x0012) },
 		},
 	}
 
@@ -155,6 +183,11 @@ func (cpu *CPUHelper) ExpectHL(want uint16) {
 		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.HL())
 	}
 }
+func (cpu *CPUHelper) ExpectSP(want uint16) {
+	if cpu.SP != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.SP)
+	}
+}
 func (cpu *CPUHelper) ExpectFlagCarry() {
 	if !cpu.F.HasCarry() {
 		cpu.t.Fatalf("expected carry flag to be set, but it's not")
@@ -168,5 +201,14 @@ func (cpu *CPUHelper) ExpectFlagCarryUnset() {
 func (cpu *CPUHelper) ExpectFlagZero() {
 	if !cpu.F.HasZero() {
 		cpu.t.Fatalf("expected zero flag to be set, but it's not")
+	}
+}
+func (cpu *CPUHelper) ExpectByte(offset uint16, want byte) {
+	got, ok := cpu.mem.Access(offset)
+	if !ok {
+		cpu.t.Fatalf("illegal offset %d", offset)
+	}
+	if got != want {
+		cpu.t.Fatalf("ExpectByte: want=%#x, got=%#x", want, got)
 	}
 }

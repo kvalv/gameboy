@@ -129,6 +129,12 @@ func (cpu *CPU) load(addr uint16, dst any) {
 		panic(fmt.Sprintf("cpu.load: not implemented for %T", dst))
 	}
 }
+func (cpu *CPU) write(addr uint16, value uint8) {
+	if cpu.mem == nil {
+		panic("cpu.mem is nil")
+	}
+	cpu.mem.WriteData(addr, []byte{value})
+}
 
 func (cpu *CPU) Step() bool {
 	if cpu.err != nil {

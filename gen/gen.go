@@ -67,13 +67,19 @@ func (o Op) CycleCount() int {
 	return count
 }
 
-func (o Op) AddData() templAddData {
-	fmt.Printf("addData called +%v\n", o)
-	return templAddData{
+func (o Op) DataAdd() templDataAdd {
+	return templDataAdd{
 		Name:      o.Operands.Last().Name,
 		Instr16:   o.Operands.Last().Is16Bit(),
 		Immediate: o.Operands.Last().Immediate,
 		DestA:     o.Operands.First().Name == "A",
+	}
+}
+func (o Op) DataInc() templDataInc {
+	return templDataInc{
+		Name:      o.Operands.First().Name,
+		Immediate: o.Operands.First().Immediate,
+		Instr16:   o.Operands.First().Is16Bit(),
 	}
 }
 
@@ -111,7 +117,7 @@ func run() error {
 	}
 
 	for code, v := range data.Unprefixed {
-		if v.Mnemonic != "ADD" {
+		if v.Mnemonic != "ADD" && v.Mnemonic != "INC" {
 			delete(data.Unprefixed, code)
 			continue
 		}
@@ -218,7 +224,9 @@ type Instruction func(cpu *CPU)
 // {{$op.Mnemonic}} {{$key}} {{operands $op}}
 func {{$op.ID}}(cpu *CPU) {
 	{{ if eq "ADD" $op.Mnemonic }} 
-		{{ template "add" $op.AddData }}
+		{{ template "add" $op.DataAdd }}
+	{{ else if eq "INC" $op.Mnemonic }}
+		{{ template "inc" $op.DataInc }}
 	{{else}}
 		{{template "todo" $op  }}
 	{{end }}
@@ -243,7 +251,7 @@ type Value struct {
 	Const *uint8
 }
 
-type templAddData struct {
+type templDataAdd struct {
 	Name      string // name of register for what to add
 	Instr16   bool   // if true, then write to HL, otherwise write to A
 	Immediate bool   // if not true, we require a load
@@ -252,7 +260,7 @@ type templAddData struct {
 
 var tmpl = template.New("main")
 
-func accessRegister(name string) (reg string) {
+func getRegister(name string) (reg string) {
 	defer func() {
 		reg = "cpu." + reg // add accessor
 	}()
@@ -270,6 +278,22 @@ func accessRegister(name string) (reg string) {
 	return
 }
 
+// inc bc, de, hl, sp, b, d, h, (hl), c, e, l, a
+// writes a line of code that sets the register to variable name
+// varname is the variable name holding the value
+func setRegister(name string, varname string) string {
+	switch name {
+	case "A", "C", "E", "L", "B", "D", "H", "SP":
+		return fmt.Sprintf("cpu.%s = %s", name, varname)
+	case "BC", "DE", "HL":
+		r1 := string(name[0])
+		r2 := string(name[1])
+		return fmt.Sprintf("cpu.%s, cpu.%s = splitU16(%s)", r1, r2, varname)
+	default:
+		return fmt.Sprintf("// todo: setreg... %s %s", name, varname)
+	}
+}
+
 // e8, n8, a8,
 // e8: XOR 0xee
 // n8: LD 0xf8
@@ -278,7 +302,7 @@ func accessRegister(name string) (reg string) {
 
 var templAdd = template.Must(tmpl.New("add").
 	Funcs(template.FuncMap{
-		"reg": accessRegister,
+		"reg": getRegister,
 	}).
 	Parse(`
 {{ if eq .Name "e8"}} {{/* special case: add to stack pointer */}}
@@ -308,6 +332,36 @@ var templAdd = template.Must(tmpl.New("add").
 {{ else }}
 	cpu.A, cpu.F = cpu.Add(cpu.A, {{reg .Name }})
 {{end }}
+`))
+
+type templDataInc struct {
+	Name      string // name of register for what to add
+	Instr16   bool
+	Immediate bool // if not true, we require a load
+}
+
+var templInc = template.Must(tmpl.New("inc").
+	Funcs(template.FuncMap{
+		"reg":    getRegister,
+		"setreg": setRegister,
+	}).
+	Parse(`
+{{if .Immediate}}
+	{{if .Instr16}}
+	res, flags := cpu.Add16({{reg .Name}}, 0x01)
+	{{else}}
+	res, flags := cpu.Add({{reg .Name}}, 0x01)
+	{{end}}
+	{{setreg .Name "res"}}
+	cpu.F = FlagRegister(flags)
+{{else}}
+	// Increments data at the absolute address specified by the register
+	var val uint8
+	cpu.load({{reg .Name}}, &val)
+	next, flags := cpu.Add(val, 0x01)
+	cpu.write({{reg .Name}}, next)
+	cpu.F = FlagRegister(flags)
+{{end}}
 `))
 
 func formatFile() {
