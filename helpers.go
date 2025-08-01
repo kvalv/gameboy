@@ -1,5 +1,6 @@
 package gameboy
 
+// for the lack of a better name...
 type TwoBytes interface {
 	uint16 | int16
 }
@@ -20,6 +21,7 @@ func splitU16(v uint16) (msb, lsb uint8) {
 }
 
 func concatU16(msb, lsb uint8) uint16 { return uint16(msb)<<8 | uint16(lsb) }
+func concatI16(msb, lsb byte) int16   { return int16(msb)<<8 | int16(lsb) }
 
 type Value interface {
 	uint8 | uint16
@@ -41,6 +43,18 @@ func add[V Value](lhs, rhs V) (V, FlagRegister) {
 	out := lhs + rhs
 	var fl Flags
 	if out < lhs || out < rhs {
+		fl |= FLAGC
+	}
+	if out == 0 {
+		fl |= FLAGZ
+	}
+	return out, FlagRegister(fl)
+}
+
+func addSigned[V uint8 | uint16](lhs V, rhs int8) (V, FlagRegister) {
+	out := V(int16(lhs) + int16(rhs))
+	var fl Flags
+	if out < lhs || (out > 0 && out < V(rhs)) {
 		fl |= FLAGC
 	}
 	if out == 0 {

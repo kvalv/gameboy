@@ -17,7 +17,7 @@ var templInc = template.Must(tmpl.New("inc").
 	var val uint8
 	cpu.load({{reg .Name}}, &val)
 	next, flags := cpu.Add(val, 0x01)
-	cpu.write({{reg .Name}}, next)
+	cpu.WriteMemory({{reg .Name}}, next)
 	cpu.F = FlagRegister(flags)
 {{end}}
 `))

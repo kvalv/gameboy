@@ -40,33 +40,34 @@ func get(name string, immediate bool) string {
 		// via method
 		return fmt.Sprintf("cpu.%s()", name)
 	case "n16":
-		// read the next 16-bit word from PC
-		return "cpu.readStackU16()"
+		return "cpu.readU16(cpu.PC)"
 	case "n8":
-		return "cpu.readStackU8()"
+		return "cpu.readU8(cpu.PC)"
 	case "a16":
-		// TODO: should be signed integer here
-		return "cpu.readStackU16()"
+		// 16-bit address
+		return "cpu.readU16(cpu.PC)"
 	case "a8":
-		// TODO: should be signed integer here
-		return "cpu.readStackU8()"
-
+		// means 8 bit unsigned data, which are added to $FF00 in certain instructions
+		return "uint32(cpu.readU8(cpu.PC)) + 0xFF00"
+	case "e8":
+		// e8: signed 8-bit data
+		return "cpu.readI8(cpu.PC)"
 	}
 	return fmt.Sprintf("// TODO - get not implemented %s", name)
 }
 
 // generates the code that writes, either to a register, or to memory
-// e.g. `cpu.write(cpu.A, data)` or `cpu.A = cpu.B`
+// e.g. `cpu.WriteMemory(cpu.A, data)` or `cpu.A = cpu.B`
 func set(name string, immediate bool, varname string) string {
 	if !immediate {
 		switch name {
 		case "a16":
 			var s strings.Builder
 			// fmt.Fprintf(&s, "msb, lsb := split(0x1122)\n")
-			fmt.Fprintf(&s, "cpu.write(%s, %s)\n", get(name, true), varname)
+			fmt.Fprintf(&s, "cpu.WriteMemory(%s, %s)\n", get(name, true), varname)
 			return s.String()
 		default:
-			return fmt.Sprintf("cpu.write(%s, %s)", get(name, true), varname)
+			return fmt.Sprintf("cpu.WriteMemory(%s, %s)", get(name, true), varname)
 		}
 	}
 	switch name {
@@ -75,7 +76,7 @@ func set(name string, immediate bool, varname string) string {
 	case "BC", "DE", "HL":
 		r1 := string(name[0])
 		r2 := string(name[1])
-		return fmt.Sprintf("cpu.%s, cpu.%s = splitU16(%s)", r1, r2, varname)
+		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", r1, r2, varname)
 	default:
 		return fmt.Sprintf("// todo: setreg... %s %s", name, varname)
 	}

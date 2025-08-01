@@ -16,7 +16,7 @@ var templDec = template.Must(tmpl.New("dec").
 	var val uint8
 	cpu.load({{reg .Name}}, &val)
 	next, flags := sub(val, 0x01)
-	cpu.write({{reg .Name}}, next)
+	cpu.WriteMemory({{reg .Name}}, next)
 	cpu.F = flags
 {{end}}
 `))

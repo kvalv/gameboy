@@ -122,11 +122,14 @@ func (cpu *CPU) AddSigned8(lhs, rhs int8) (res int8, flags FlagRegister) {
 	return res, FlagRegister(fl)
 }
 
+// loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
 	b, ok := cpu.mem.Access(addr)
+	cpu.log.Debug("Accessing memory", "loc", addr, "res", fmt.Sprintf("%#x", b))
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
+	cpu.IncProgramCounter()
 	switch concr := dst.(type) {
 	case *uint8:
 		*concr = b
@@ -161,7 +164,7 @@ func (cpu *CPU) loadI16(addr uint16) int16 {
 func (cpu *CPU) readStackU8() uint8 {
 	var value uint8
 	cpu.load(cpu.SP, &value)
-	cpu.SP++
+	cpu.IncProgramCounter()
 	return value
 }
 func (cpu *CPU) readStackU16() uint16 {
@@ -172,8 +175,30 @@ func (cpu *CPU) readStackU16() uint16 {
 	cpu.SP++
 	return concatU16(msb, lsb)
 }
+func (cpu *CPU) readU8(addr uint16) uint8 {
+	var value uint8
+	cpu.load(addr, &value)
+	return value
+}
+func (cpu *CPU) readU16(addr uint16) uint16 {
+	var msb, lsb byte
+	cpu.load(addr, &msb)
+	cpu.load(addr+1, &lsb)
+	return concatU16(msb, lsb)
+}
+func (cpu *CPU) readI8(addr uint16) int8 {
+	var value byte
+	cpu.load(addr, &value)
+	return int8(value)
+}
+func (cpu *CPU) readI16(addr uint16) int16 {
+	var msb, lsb byte
+	cpu.load(addr, &msb)
+	cpu.load(addr+1, &lsb)
+	return concatI16(msb, lsb)
+}
 
-func (cpu *CPU) write(addr uint16, value any) {
+func (cpu *CPU) WriteMemory(addr uint16, value any) {
 	if cpu.mem == nil {
 		panic("cpu.mem is nil")
 	}
@@ -182,7 +207,7 @@ func (cpu *CPU) write(addr uint16, value any) {
 		cpu.mem.WriteData(addr, []byte{value})
 	case uint16:
 		msb, lsb := split(value)
-		cpu.mem.WriteData(addr, []byte{msb, lsb})
+		cpu.mem.WriteData(addr, []byte{lsb, msb})
 	}
 }
 
@@ -204,11 +229,12 @@ func (cpu *CPU) Step() bool {
 	if instr == 0x00 {
 		return true // NOP command
 	}
-	if instr == 0x01 {
+	if instr == 0x10 {
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}
 	op, ok := ops[instr]
+	log.Debug("instruction start")
 	if !ok {
 		cpu.err = fmt.Errorf("unknown code: %#x", instr)
 		return false
@@ -221,9 +247,14 @@ func (cpu *CPU) Step() bool {
 	// PC towards the last instruction that is done by the op.
 
 	op(cpu) // execute the operation
-	log.Info("ran a step", "curr", cpu.PC)
+	log.Debug("instruction done", "curr", cpu.PC)
 
 	return true
+}
+
+func (cpu *CPU) IncProgramCounter() {
+	cpu.PC++
+	cpu.log.Debug("PC increment", "new", cpu.PC)
 }
 
 func (cpu *CPU) Dump(w io.Writer) {
@@ -246,7 +277,7 @@ func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.log = log
 
 	for cpu.Step() {
-		cpu.PC++
+		cpu.IncProgramCounter()
 	}
 	return cpu.Err()
 }

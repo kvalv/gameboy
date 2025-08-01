@@ -32,6 +32,10 @@ func (m *Memory) Write(elems ...any) *Memory {
 			m.data = append(m.data, v...)
 		case uint8:
 			m.data = append(m.data, v)
+		case int:
+			m.data = append(m.data, uint8(v))
+		default:
+			panic(fmt.Sprintf("not implemented for %T", v))
 		}
 	}
 	return m
@@ -39,6 +43,10 @@ func (m *Memory) Write(elems ...any) *Memory {
 
 func (m *Memory) WriteByteAt(off uint16, value byte) *Memory {
 	return m.WriteData(off, []byte{value})
+}
+func (m *Memory) Reserve(size uint16) *Memory {
+	m.WriteByteAt(size, 0x00)
+	return m
 }
 func (m *Memory) WriteData(off uint16, p []byte) *Memory {
 	if len(m.data) < int(off)+len(p) {

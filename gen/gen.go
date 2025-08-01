@@ -229,6 +229,7 @@ type templDataAdd struct {
 }
 
 var tmpl = template.New("main")
+
 // e8, n8, a8,
 // e8: XOR 0xee
 // n8: LD 0xf8

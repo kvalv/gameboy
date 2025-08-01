@@ -5,9 +5,9 @@ type Instruction func(cpu *CPU)
 // LD BC,n16    code=0x01
 func LD_01(cpu *CPU) {
 
-	data := cpu.readStackU16()
+	data := cpu.readU16(cpu.PC)
 
-	cpu.B, cpu.C = splitU16(data)
+	cpu.B, cpu.C = split(data)
 
 	cpu.cycles += 12
 }
@@ -17,7 +17,7 @@ func LD_02(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.BC(), data)
+	cpu.WriteMemory(cpu.BC(), data)
 
 	cpu.cycles += 8
 }
@@ -55,7 +55,7 @@ func DEC_05(cpu *CPU) {
 // LD B,n8    code=0x06
 func LD_06(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.B = data
 
@@ -67,7 +67,7 @@ func LD_08(cpu *CPU) {
 
 	data := cpu.SP
 
-	cpu.write(cpu.readStackU16(), data)
+	cpu.WriteMemory(cpu.readU16(cpu.PC), data)
 
 	cpu.cycles += 20
 }
@@ -127,7 +127,7 @@ func DEC_0D(cpu *CPU) {
 // LD C,n8    code=0x0e
 func LD_0E(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.C = data
 
@@ -137,9 +137,9 @@ func LD_0E(cpu *CPU) {
 // LD DE,n16    code=0x11
 func LD_11(cpu *CPU) {
 
-	data := cpu.readStackU16()
+	data := cpu.readU16(cpu.PC)
 
-	cpu.D, cpu.E = splitU16(data)
+	cpu.D, cpu.E = split(data)
 
 	cpu.cycles += 12
 }
@@ -149,7 +149,7 @@ func LD_12(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.DE(), data)
+	cpu.WriteMemory(cpu.DE(), data)
 
 	cpu.cycles += 8
 }
@@ -187,7 +187,7 @@ func DEC_15(cpu *CPU) {
 // LD D,n8    code=0x16
 func LD_16(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.D = data
 
@@ -249,7 +249,7 @@ func DEC_1D(cpu *CPU) {
 // LD E,n8    code=0x1e
 func LD_1E(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.E = data
 
@@ -259,9 +259,9 @@ func LD_1E(cpu *CPU) {
 // LD HL,n16    code=0x21
 func LD_21(cpu *CPU) {
 
-	data := cpu.readStackU16()
+	data := cpu.readU16(cpu.PC)
 
-	cpu.H, cpu.L = splitU16(data)
+	cpu.H, cpu.L = split(data)
 
 	cpu.cycles += 12
 }
@@ -271,7 +271,12 @@ func LD_22(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
+
+	// post increment
+	incr, flags := add(cpu.HL(), 0x01)
+	cpu.H, cpu.L = split(incr)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -309,7 +314,7 @@ func DEC_25(cpu *CPU) {
 // LD H,n8    code=0x26
 func LD_26(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.H = data
 
@@ -371,7 +376,7 @@ func DEC_2D(cpu *CPU) {
 // LD L,n8    code=0x2e
 func LD_2E(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.L = data
 
@@ -381,7 +386,7 @@ func LD_2E(cpu *CPU) {
 // LD SP,n16    code=0x31
 func LD_31(cpu *CPU) {
 
-	data := cpu.readStackU16()
+	data := cpu.readU16(cpu.PC)
 
 	cpu.SP = data
 
@@ -393,7 +398,12 @@ func LD_32(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
+
+	// post decrement
+	decr, flags := sub(cpu.HL(), 0x01)
+	cpu.H, cpu.L = split(decr)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -415,7 +425,7 @@ func INC_34(cpu *CPU) {
 	var val uint8
 	cpu.load(cpu.HL(), &val)
 	next, flags := cpu.Add(val, 0x01)
-	cpu.write(cpu.HL(), next)
+	cpu.WriteMemory(cpu.HL(), next)
 	cpu.F = FlagRegister(flags)
 
 	cpu.cycles += 12
@@ -427,7 +437,7 @@ func DEC_35(cpu *CPU) {
 	var val uint8
 	cpu.load(cpu.HL(), &val)
 	next, flags := sub(val, 0x01)
-	cpu.write(cpu.HL(), next)
+	cpu.WriteMemory(cpu.HL(), next)
 	cpu.F = flags
 
 	cpu.cycles += 12
@@ -436,9 +446,9 @@ func DEC_35(cpu *CPU) {
 // LD (HL),n8    code=0x36
 func LD_36(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 12
 }
@@ -498,7 +508,7 @@ func DEC_3D(cpu *CPU) {
 // LD A,n8    code=0x3e
 func LD_3E(cpu *CPU) {
 
-	data := cpu.readStackU8()
+	data := cpu.readU8(cpu.PC)
 
 	cpu.A = data
 
@@ -990,7 +1000,7 @@ func LD_70(cpu *CPU) {
 
 	data := cpu.B
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1000,7 +1010,7 @@ func LD_71(cpu *CPU) {
 
 	data := cpu.C
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1010,7 +1020,7 @@ func LD_72(cpu *CPU) {
 
 	data := cpu.D
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1020,7 +1030,7 @@ func LD_73(cpu *CPU) {
 
 	data := cpu.E
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1030,7 +1040,7 @@ func LD_74(cpu *CPU) {
 
 	data := cpu.H
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1040,7 +1050,7 @@ func LD_75(cpu *CPU) {
 
 	data := cpu.L
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1050,7 +1060,7 @@ func LD_77(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.HL(), data)
+	cpu.WriteMemory(cpu.HL(), data)
 
 	cpu.cycles += 8
 }
@@ -1230,7 +1240,7 @@ func LD_EA(cpu *CPU) {
 
 	data := cpu.A
 
-	cpu.write(cpu.readStackU16(), data)
+	cpu.WriteMemory(cpu.readU16(cpu.PC), data)
 
 	cpu.cycles += 16
 }
@@ -1238,7 +1248,10 @@ func LD_EA(cpu *CPU) {
 // LD HL,SP+,e8    code=0xf8
 func LD_F8(cpu *CPU) {
 
-	// TOOD: load: special case
+	e := cpu.readI8(cpu.PC)
+	res, flags := addSigned(cpu.SP, e)
+	cpu.H, cpu.L = split(res)
+	cpu.F = flags
 
 	cpu.cycles += 12
 }
@@ -1256,7 +1269,7 @@ func LD_F9(cpu *CPU) {
 // LD A,(a16)    code=0xfa
 func LD_FA(cpu *CPU) {
 
-	data := cpu.loadU8(cpu.readStackU16())
+	data := cpu.loadU8(cpu.readU16(cpu.PC))
 
 	cpu.A = data
 
