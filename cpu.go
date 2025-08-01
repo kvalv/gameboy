@@ -2,6 +2,7 @@ package gameboy
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 )
 
@@ -139,8 +140,7 @@ func (cpu *CPU) Step() bool {
 	if cpu.err != nil { // if loading next instruction failed, we'll stop
 		return false
 	}
-	log := cpu.log.With("PC", cpu.PC)
-	cpu.PC++
+	log := cpu.log.With("PC", cpu.PC, "instr", fmt.Sprintf("%#x", instr))
 	// TODO: handle prefix...
 	if instr == 0xCB {
 		panic("TODO: handle prefix")
@@ -157,15 +157,33 @@ func (cpu *CPU) Step() bool {
 		cpu.err = fmt.Errorf("unknown code: %#x", instr)
 		return false
 	}
+
+	// Invariant: the PC is at the instruction at the start of the operation
+	// and should end at the last instruction related to this command. For
+	// very simple instructions (eg ADD A B), then the PC should not be changed
+	// by op. However, for instructions that load data, the op should move the
+	// PC towards the last instruction that is done by the op.
+
 	op(cpu) // execute the operation
 	log.Info("ran a step", "curr", cpu.PC)
 
 	return true
 }
 
+func (cpu *CPU) Dump(w io.Writer) {
+	fmt.Fprintf(w, "A:  %#02x     F:  %#02x\n", cpu.A, uint8(cpu.F))
+	fmt.Fprintf(w, "B:  %#02x     C:  %#02x\n", cpu.B, cpu.C)
+	fmt.Fprintf(w, "D:  %#02x     E:  %#02x\n", cpu.D, cpu.E)
+	fmt.Fprintf(w, "H:  %#02x     L:  %#02x\n", cpu.H, cpu.L)
+	fmt.Fprintf(w, "PC: %#04x   SP: %#04x\n", cpu.PC, cpu.SP)
+	fmt.Fprintf(w, "Cycles: %d\n", cpu.cycles)
+	fmt.Fprintf(w, "HL: %#04x   BC: %#04x   DE: %#04x\n", cpu.HL(), cpu.BC(), cpu.DE())
+}
+
 type FlagRegister Register
 
 func (f FlagRegister) HasCarry() bool { return (uint8(f) & uint8(FLAGC)) > 0 }
+func (f FlagRegister) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
 
 func splitU16(v uint16) (msb, lsb uint8) {
 	msb = uint8(v >> 8)
@@ -178,6 +196,7 @@ func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.log = log
 
 	for cpu.Step() {
+		cpu.PC++
 	}
 	return cpu.Err()
 }
