@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -75,13 +76,6 @@ func (o Op) DataAdd() templDataAdd {
 		DestA:     o.Operands.First().Name == "A",
 	}
 }
-func (o Op) DataInc() templDataInc {
-	return templDataInc{
-		Name:      o.Operands.First().Name,
-		Immediate: o.Operands.First().Immediate,
-		Instr16:   o.Operands.First().Is16Bit(),
-	}
-}
 
 func (o Op) InstructionType() InstructionType {
 	if o.Code > 0xff {
@@ -117,7 +111,12 @@ func run() error {
 	}
 
 	for code, v := range data.Unprefixed {
-		if v.Mnemonic != "ADD" && v.Mnemonic != "INC" {
+		keep := []string{
+			"ADD",
+			"INC",
+			"DEC",
+		}
+		if !slices.Contains(keep, v.Mnemonic) {
 			delete(data.Unprefixed, code)
 			continue
 		}
@@ -141,67 +140,10 @@ func run() error {
 	data.Prefixed = map[string]Op{}
 
 	templ := template.Must(tmpl.Funcs(template.FuncMap{
-		"join": func(x any) string {
-			switch x := x.(type) {
-			case []int:
-				var parts []string
-				for _, elem := range x {
-					parts = append(parts, fmt.Sprintf("%d", elem))
-				}
-				return strings.Join(parts, ", ")
-			case []string:
-				var parts []string
-				for _, elem := range x {
-					parts = append(parts, fmt.Sprintf("%s", elem))
-				}
-				return strings.Join(parts, ", ")
-			default:
-				panic(fmt.Sprintf("not implemented for %T", x))
-			}
-		},
-		"capitalize": strings.ToUpper,
 		"operands": func(x Op) string { // human-readable operand, // eg `HL,BC`
 			var parts []string
 			for _, arg := range x.Operands {
 				parts = append(parts, arg.Name)
-			}
-			return strings.Join(parts, ",")
-		},
-		"inject": func(x Op) string {
-			return `{{template "add16" .}}`
-		},
-		"args": func(x Op) string { // generates args string, eg `cpu.A, cpu.B`
-			var parts []string
-			for _, arg := range x.Operands {
-				var part string
-				switch arg.Name {
-				case "HL":
-					part = "read16(cpu.H, cpu.L)"
-				case "BC":
-					part = "read16(cpu.B, cpu.C)"
-				case "DE":
-					part = "read16(cpu.D, cpu.E)"
-				case "SP":
-					part = "cpu.SP"
-				case "AF":
-					part = "read16(cpu.A, cpu.F)"
-				case "n8":
-					part = "TODO"
-				default:
-					if len(arg.Name) != 1 {
-						panic(fmt.Sprintf("Unknown 16-bit operand %s", arg.Name))
-					}
-					part = fmt.Sprintf("read16(0, cpu.%s)", arg.Name)
-					// part = fmt.Sprintf("cpu.%s", arg.Name)
-				}
-				parts = append(parts, part)
-			}
-			return strings.Join(parts, ",")
-		},
-		"args8": func(x Op) string { // generates args string, eg `cpu.A, cpu.B`
-			var parts []string
-			for _, arg := range x.Operands {
-				parts = append(parts, fmt.Sprintf("cpu.%s", arg.Name))
 			}
 			return strings.Join(parts, ",")
 		},
@@ -227,8 +169,10 @@ func {{$op.ID}}(cpu *CPU) {
 		{{ template "add" $op.DataAdd }}
 	{{ else if eq "INC" $op.Mnemonic }}
 		{{ template "inc" $op.DataInc }}
+	{{ else if eq "DEC" $op.Mnemonic }}
+		{{ template "dec" $op.DataDec }}
 	{{else}}
-		{{template "todo" $op  }}
+		// TODO: {{$op.ID}}
 	{{end }}
 	cpu.cycles += {{$op.CycleCount}}
 }
@@ -239,11 +183,6 @@ var ops = map[uint8]Instruction{
 	{{printf "%#x" .Code}}: {{.ID}},
 	{{end}}
 }
-
-{{define "todo"}}
-panic("Not implemented")
-{{end}}
-
 `
 
 type Value struct {
@@ -332,36 +271,6 @@ var templAdd = template.Must(tmpl.New("add").
 {{ else }}
 	cpu.A, cpu.F = cpu.Add(cpu.A, {{reg .Name }})
 {{end }}
-`))
-
-type templDataInc struct {
-	Name      string // name of register for what to add
-	Instr16   bool
-	Immediate bool // if not true, we require a load
-}
-
-var templInc = template.Must(tmpl.New("inc").
-	Funcs(template.FuncMap{
-		"reg":    getRegister,
-		"setreg": setRegister,
-	}).
-	Parse(`
-{{if .Immediate}}
-	{{if .Instr16}}
-	res, flags := cpu.Add16({{reg .Name}}, 0x01)
-	{{else}}
-	res, flags := cpu.Add({{reg .Name}}, 0x01)
-	{{end}}
-	{{setreg .Name "res"}}
-	cpu.F = FlagRegister(flags)
-{{else}}
-	// Increments data at the absolute address specified by the register
-	var val uint8
-	cpu.load({{reg .Name}}, &val)
-	next, flags := cpu.Add(val, 0x01)
-	cpu.write({{reg .Name}}, next)
-	cpu.F = FlagRegister(flags)
-{{end}}
 `))
 
 func formatFile() {

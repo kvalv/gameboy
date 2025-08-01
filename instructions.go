@@ -5,10 +5,9 @@ type Instruction func(cpu *CPU)
 // INC 0x03 BC
 func INC_03(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.BC(), 0x01)
-
+	res, flags := add(cpu.BC(), 0x01)
 	cpu.B, cpu.C = splitU16(res)
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -16,10 +15,19 @@ func INC_03(cpu *CPU) {
 // INC 0x04 B
 func INC_04(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.B, 0x01)
-
+	res, flags := add(cpu.B, 0x01)
 	cpu.B = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x05 B
+func DEC_05(cpu *CPU) {
+
+	res, flags := sub(cpu.B, 0x01)
+	cpu.B = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -36,13 +44,32 @@ func ADD_09(cpu *CPU) {
 	cpu.cycles += 8
 }
 
+// DEC 0x0B BC
+func DEC_0B(cpu *CPU) {
+
+	res, flags := sub(cpu.BC(), 0x01)
+	cpu.B, cpu.C = splitU16(res)
+	cpu.F = flags
+
+	cpu.cycles += 8
+}
+
 // INC 0x0C C
 func INC_0C(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.C, 0x01)
-
+	res, flags := add(cpu.C, 0x01)
 	cpu.C = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x0D C
+func DEC_0D(cpu *CPU) {
+
+	res, flags := sub(cpu.C, 0x01)
+	cpu.C = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -50,10 +77,9 @@ func INC_0C(cpu *CPU) {
 // INC 0x13 DE
 func INC_13(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.DE(), 0x01)
-
+	res, flags := add(cpu.DE(), 0x01)
 	cpu.D, cpu.E = splitU16(res)
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -61,10 +87,19 @@ func INC_13(cpu *CPU) {
 // INC 0x14 D
 func INC_14(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.D, 0x01)
-
+	res, flags := add(cpu.D, 0x01)
 	cpu.D = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x15 D
+func DEC_15(cpu *CPU) {
+
+	res, flags := sub(cpu.D, 0x01)
+	cpu.D = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -81,13 +116,32 @@ func ADD_19(cpu *CPU) {
 	cpu.cycles += 8
 }
 
+// DEC 0x1B DE
+func DEC_1B(cpu *CPU) {
+
+	res, flags := sub(cpu.DE(), 0x01)
+	cpu.D, cpu.E = splitU16(res)
+	cpu.F = flags
+
+	cpu.cycles += 8
+}
+
 // INC 0x1C E
 func INC_1C(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.E, 0x01)
-
+	res, flags := add(cpu.E, 0x01)
 	cpu.E = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x1D E
+func DEC_1D(cpu *CPU) {
+
+	res, flags := sub(cpu.E, 0x01)
+	cpu.E = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -95,10 +149,9 @@ func INC_1C(cpu *CPU) {
 // INC 0x23 HL
 func INC_23(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.HL(), 0x01)
-
+	res, flags := add(cpu.HL(), 0x01)
 	cpu.H, cpu.L = splitU16(res)
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -106,10 +159,19 @@ func INC_23(cpu *CPU) {
 // INC 0x24 H
 func INC_24(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.H, 0x01)
-
+	res, flags := add(cpu.H, 0x01)
 	cpu.H = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x25 H
+func DEC_25(cpu *CPU) {
+
+	res, flags := sub(cpu.H, 0x01)
+	cpu.H = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -126,13 +188,32 @@ func ADD_29(cpu *CPU) {
 	cpu.cycles += 8
 }
 
+// DEC 0x2B HL
+func DEC_2B(cpu *CPU) {
+
+	res, flags := sub(cpu.HL(), 0x01)
+	cpu.H, cpu.L = splitU16(res)
+	cpu.F = flags
+
+	cpu.cycles += 8
+}
+
 // INC 0x2C L
 func INC_2C(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.L, 0x01)
-
+	res, flags := add(cpu.L, 0x01)
 	cpu.L = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x2D L
+func DEC_2D(cpu *CPU) {
+
+	res, flags := sub(cpu.L, 0x01)
+	cpu.L = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -140,10 +221,9 @@ func INC_2C(cpu *CPU) {
 // INC 0x33 SP
 func INC_33(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.SP, 0x01)
-
+	res, flags := add(cpu.SP, 0x01)
 	cpu.SP = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -161,6 +241,18 @@ func INC_34(cpu *CPU) {
 	cpu.cycles += 12
 }
 
+// DEC 0x35 HL
+func DEC_35(cpu *CPU) {
+
+	var val uint8
+	cpu.load(cpu.HL(), &val)
+	next, flags := sub(val, 0x01)
+	cpu.write(cpu.HL(), next)
+	cpu.F = flags
+
+	cpu.cycles += 12
+}
+
 // ADD 0x39 HL,SP
 func ADD_39(cpu *CPU) {
 
@@ -173,13 +265,32 @@ func ADD_39(cpu *CPU) {
 	cpu.cycles += 8
 }
 
+// DEC 0x3B SP
+func DEC_3B(cpu *CPU) {
+
+	res, flags := sub(cpu.SP, 0x01)
+	cpu.SP = res
+	cpu.F = flags
+
+	cpu.cycles += 8
+}
+
 // INC 0x3C A
 func INC_3C(cpu *CPU) {
 
-	res, flags := cpu.Add(cpu.A, 0x01)
-
+	res, flags := add(cpu.A, 0x01)
 	cpu.A = res
-	cpu.F = FlagRegister(flags)
+	cpu.F = flags
+
+	cpu.cycles += 4
+}
+
+// DEC 0x3D A
+func DEC_3D(cpu *CPU) {
+
+	res, flags := sub(cpu.A, 0x01)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -277,20 +388,32 @@ func ADD_E8(cpu *CPU) {
 var ops = map[uint8]Instruction{
 	0x3:  INC_03,
 	0x4:  INC_04,
+	0x5:  DEC_05,
 	0x9:  ADD_09,
+	0xb:  DEC_0B,
 	0xc:  INC_0C,
+	0xd:  DEC_0D,
 	0x13: INC_13,
 	0x14: INC_14,
+	0x15: DEC_15,
 	0x19: ADD_19,
+	0x1b: DEC_1B,
 	0x1c: INC_1C,
+	0x1d: DEC_1D,
 	0x23: INC_23,
 	0x24: INC_24,
+	0x25: DEC_25,
 	0x29: ADD_29,
+	0x2b: DEC_2B,
 	0x2c: INC_2C,
+	0x2d: DEC_2D,
 	0x33: INC_33,
 	0x34: INC_34,
+	0x35: DEC_35,
 	0x39: ADD_39,
+	0x3b: DEC_3B,
 	0x3c: INC_3C,
+	0x3d: DEC_3D,
 	0x80: ADD_80,
 	0x81: ADD_81,
 	0x82: ADD_82,

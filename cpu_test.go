@@ -133,6 +133,17 @@ func TestInstructions(t *testing.T) {
 			},
 			check: func(t *testing.T, cpu *CPUHelper) { cpu.ExpectSP(0x0012) },
 		},
+		{
+			desc: "DEC HL",
+			cpu:  &CPU{},
+			initMem: func(m *Memory) {
+				m.WriteInstr(0x2b)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectHL(0xffff)
+				cpu.ExpectFlagCarry()
+			},
+		},
 	}
 
 	for _, tc := range cases {

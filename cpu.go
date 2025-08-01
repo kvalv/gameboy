@@ -99,6 +99,46 @@ func (cpu *CPU) Add16(lhs, rhs uint16) (res uint16, flags FlagRegister) {
 	return res, FlagRegister(fl)
 }
 
+func (cpu *CPU) Dec(v uint8) (res uint8, flags FlagRegister) {
+	var fl Flags
+	res = res - v
+	if v > res {
+		fl |= FLAGC
+	}
+	if res == 0 {
+		fl |= FLAGZ
+	}
+	return res, FlagRegister(fl)
+}
+
+type Value interface {
+	uint8 | uint16
+}
+
+func sub[V Value](lhs, rhs V) (V, FlagRegister) {
+	out := lhs - rhs
+	var fl Flags
+	if lhs < rhs {
+		fl |= FLAGC
+	}
+	if out == 0 {
+		fl |= FLAGZ
+	}
+	return out, FlagRegister(fl)
+}
+
+func add[V Value](lhs, rhs V) (V, FlagRegister) {
+	out := lhs + rhs
+	var fl Flags
+	if out < lhs || out < rhs {
+		fl |= FLAGC
+	}
+	if out == 0 {
+		fl |= FLAGZ
+	}
+	return out, FlagRegister(fl)
+}
+
 func (cpu *CPU) AddSigned16(lhs, rhs int16) (res int16, flags FlagRegister) {
 	var fl Flags
 	res = lhs + rhs

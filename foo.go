@@ -1,3 +1,3 @@
 package gameboy
 
-//go:generate go run ./gen/gen.go
+//go:generate go run ./gen
