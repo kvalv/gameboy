@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-var dest = "opcodes.go"
+var dest = "instructions.go"
 
 type Operand struct {
 	Name      string `json:"name"`
@@ -20,8 +20,6 @@ type Operand struct {
 
 func (o Operand) Is16Bit() bool { return len(o.Name) == 2 }
 func (o Operand) Is8Bit() bool  { return len(o.Name) == 1 }
-func (o Operand) High() string  { return fmt.Sprintf("cpu.%s", o.Name[0]) }
-func (o Operand) Low() string   { return fmt.Sprintf("cpu.%s", o.Name[1]) }
 
 type Operands []Operand
 
@@ -214,7 +212,7 @@ func run() error {
 
 const codeTemplate = `package gameboy
 
-type Opcode func(cpu *CPU)
+type Instruction func(cpu *CPU)
 
 {{ range $key, $op := .Unprefixed }}
 // {{$op.Mnemonic}} {{$key}} {{operands $op}}
@@ -228,7 +226,7 @@ func {{$op.ID}}(cpu *CPU) {
 }
 {{ end}}
 
-var ops = map[uint8]Opcode{
+var ops = map[uint8]Instruction{
 	{{ range .Unprefixed -}}
 	{{printf "%#x" .Code}}: {{.ID}},
 	{{end}}

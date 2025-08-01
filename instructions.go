@@ -1,6 +1,6 @@
 package gameboy
 
-type Opcode func(cpu *CPU)
+type Instruction func(cpu *CPU)
 
 // ADD 0x09 HL,BC
 func ADD_09(cpu *CPU) {
@@ -140,7 +140,7 @@ func ADD_E8(cpu *CPU) {
 	cpu.cycles += 16
 }
 
-var ops = map[uint8]Opcode{
+var ops = map[uint8]Instruction{
 	0x9:  ADD_09,
 	0x19: ADD_19,
 	0x29: ADD_29,

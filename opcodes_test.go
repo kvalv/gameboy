@@ -7,7 +7,7 @@ import (
 func TestAdd(t *testing.T) {
 	cases := []struct {
 		desc string
-		op   Opcode
+		op   Instruction
 	}{
 		{
 			desc: "ADD_09",
@@ -22,11 +22,6 @@ func TestAdd(t *testing.T) {
 }
 
 func TestOpcodes(t *testing.T) {
-	cpu := NewCPU()
-	cpu.A = 120
-	cpu.B = 170
-	ADD_09(cpu)
-
 	cases := []struct {
 		desc      string
 		lhs, rhs  uint8
@@ -53,7 +48,7 @@ func TestOpcodes(t *testing.T) {
 			cpu.A = tc.lhs
 			cpu.B = tc.rhs
 
-			ADD_09(cpu)
+			ADD_80(cpu)
 			if cpu.A != tc.wantRes {
 				t.Fatalf("expected %d, got %d", tc.wantRes, cpu.A)
 			}
