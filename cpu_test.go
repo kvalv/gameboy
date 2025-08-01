@@ -26,7 +26,7 @@ func TestInstructions(t *testing.T) {
 				A: 5, B: 2,
 			},
 			initMem: func(m *Memory) {
-				m.Append([]byte{0x80})
+				m.Write([]byte{0x80})
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectA(7)
@@ -144,6 +144,18 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectFlagCarry()
 			},
 		},
+		{
+			desc: "LD B,n8 0x06",
+			cpu:  &CPU{},
+			initMem: func(m *Memory) {
+				m.WriteInstr(0x06)
+				m.Write(0xab) // the data
+				m.WriteInstr(INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectB(0xab)
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -164,7 +176,6 @@ func TestInstructions(t *testing.T) {
 
 		})
 	}
-
 }
 
 func logger() *slog.Logger {
@@ -187,6 +198,41 @@ type CPUHelper struct {
 func (cpu *CPUHelper) ExpectA(want uint8) {
 	if cpu.A != want {
 		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.A)
+	}
+}
+func (cpu *CPUHelper) ExpectB(want uint8) {
+	if cpu.B != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.B)
+	}
+}
+func (cpu *CPUHelper) ExpectC(want uint8) {
+	if cpu.C != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.C)
+	}
+}
+func (cpu *CPUHelper) ExpectD(want uint8) {
+	if cpu.D != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.D)
+	}
+}
+func (cpu *CPUHelper) ExpectE(want uint8) {
+	if cpu.E != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.E)
+	}
+}
+func (cpu *CPUHelper) ExpectH(want uint8) {
+	if cpu.H != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.H)
+	}
+}
+func (cpu *CPUHelper) ExpectL(want uint8) {
+	if cpu.L != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.L)
+	}
+}
+func (cpu *CPUHelper) ExpectPC(want uint16) {
+	if cpu.PC != want {
+		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.PC)
 	}
 }
 func (cpu *CPUHelper) ExpectHL(want uint16) {

@@ -25,9 +25,15 @@ func (m *Memory) WriteInstr(v uint8) *Memory {
 	m.data = append(m.data, v)
 	return m
 }
-
-func (m *Memory) Append(p []byte) *Memory {
-	m.data = append(m.data, p...)
+func (m *Memory) Write(elems ...any) *Memory {
+	for _, v := range elems {
+		switch v := v.(type) {
+		case []byte:
+			m.data = append(m.data, v...)
+		case uint8:
+			m.data = append(m.data, v)
+		}
+	}
 	return m
 }
 

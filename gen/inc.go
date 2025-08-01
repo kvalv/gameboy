@@ -35,4 +35,3 @@ func (o Op) DataInc() templDataInc {
 		Instr16:   o.Operands.First().Is16Bit(),
 	}
 }
-

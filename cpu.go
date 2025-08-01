@@ -69,11 +69,9 @@ func NewCPU() *CPU {
 	return &CPU{}
 }
 
-func (cpu *CPU) HL() uint16 { return uint16(cpu.H)<<8 | uint16(cpu.L) }
-
-// bc, de,
-func (cpu *CPU) BC() uint16 { return uint16(cpu.B)<<8 | uint16(cpu.C) }
-func (cpu *CPU) DE() uint16 { return uint16(cpu.D)<<8 | uint16(cpu.E) }
+func (cpu *CPU) HL() uint16 { return concatU16(cpu.H, cpu.L) }
+func (cpu *CPU) BC() uint16 { return concatU16(cpu.B, cpu.C) }
+func (cpu *CPU) DE() uint16 { return concatU16(cpu.D, cpu.E) }
 
 func (cpu *CPU) Add(lhs, rhs uint8) (res uint8, flags FlagRegister) {
 	var fl Flags
@@ -111,34 +109,6 @@ func (cpu *CPU) Dec(v uint8) (res uint8, flags FlagRegister) {
 	return res, FlagRegister(fl)
 }
 
-type Value interface {
-	uint8 | uint16
-}
-
-func sub[V Value](lhs, rhs V) (V, FlagRegister) {
-	out := lhs - rhs
-	var fl Flags
-	if lhs < rhs {
-		fl |= FLAGC
-	}
-	if out == 0 {
-		fl |= FLAGZ
-	}
-	return out, FlagRegister(fl)
-}
-
-func add[V Value](lhs, rhs V) (V, FlagRegister) {
-	out := lhs + rhs
-	var fl Flags
-	if out < lhs || out < rhs {
-		fl |= FLAGC
-	}
-	if out == 0 {
-		fl |= FLAGZ
-	}
-	return out, FlagRegister(fl)
-}
-
 func (cpu *CPU) AddSigned16(lhs, rhs int16) (res int16, flags FlagRegister) {
 	var fl Flags
 	res = lhs + rhs
@@ -157,9 +127,6 @@ func (cpu *CPU) load(addr uint16, dst any) {
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
-	if addr == 0x2233 {
-		fmt.Printf("yay %d\n", b)
-	}
 	switch concr := dst.(type) {
 	case *uint8:
 		*concr = b
@@ -169,11 +136,54 @@ func (cpu *CPU) load(addr uint16, dst any) {
 		panic(fmt.Sprintf("cpu.load: not implemented for %T", dst))
 	}
 }
-func (cpu *CPU) write(addr uint16, value uint8) {
+func (cpu *CPU) loadU16(addr uint16) uint16 {
+	var dst uint16
+	cpu.load(addr, &dst)
+	return dst
+}
+func (cpu *CPU) loadU8(addr uint16) uint8 {
+	var dst uint8
+	cpu.load(addr, &dst)
+	return dst
+}
+func (cpu *CPU) loadI8(addr uint16) int8 {
+	var dst int8
+	cpu.load(addr, &dst)
+	return dst
+}
+func (cpu *CPU) loadI16(addr uint16) int16 {
+	var dst int16
+	cpu.load(addr, &dst)
+	return dst
+}
+
+// load memory for stack pointer
+func (cpu *CPU) readStackU8() uint8 {
+	var value uint8
+	cpu.load(cpu.SP, &value)
+	cpu.SP++
+	return value
+}
+func (cpu *CPU) readStackU16() uint16 {
+	var lsb, msb uint8
+	cpu.load(cpu.SP, &lsb)
+	cpu.SP++
+	cpu.load(cpu.SP, &msb)
+	cpu.SP++
+	return concatU16(msb, lsb)
+}
+
+func (cpu *CPU) write(addr uint16, value any) {
 	if cpu.mem == nil {
 		panic("cpu.mem is nil")
 	}
-	cpu.mem.WriteData(addr, []byte{value})
+	switch value := value.(type) {
+	case uint8:
+		cpu.mem.WriteData(addr, []byte{value})
+	case uint16:
+		msb, lsb := split(value)
+		cpu.mem.WriteData(addr, []byte{msb, lsb})
+	}
 }
 
 func (cpu *CPU) Step() bool {
@@ -230,12 +240,6 @@ type FlagRegister Register
 
 func (f FlagRegister) HasCarry() bool { return (uint8(f) & uint8(FLAGC)) > 0 }
 func (f FlagRegister) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
-
-func splitU16(v uint16) (msb, lsb uint8) {
-	msb = uint8(v >> 8)
-	lsb = uint8(v)
-	return
-}
 
 func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.mem = mem

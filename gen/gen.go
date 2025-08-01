@@ -17,6 +17,27 @@ type Operand struct {
 	Name      string `json:"name"`
 	Immediate bool   `json:"immediate"`
 	Bytes     int    `json:"bytes"`
+
+	Increment bool `json:"increment"` // if true, then this operand is incremented after use
+	Decrement bool `json:"decrement"` // if true, then this operand is decremented after use
+}
+
+func (o Operand) String() string {
+	var s strings.Builder
+	if !o.Immediate {
+		s.WriteString("(")
+	}
+	s.WriteString(o.Name)
+	if o.Increment {
+		s.WriteString("+")
+	}
+	if o.Decrement {
+		s.WriteString("-")
+	}
+	if !o.Immediate {
+		s.WriteString(")")
+	}
+	return s.String()
 }
 
 func (o Operand) Is16Bit() bool { return len(o.Name) == 2 }
@@ -24,8 +45,9 @@ func (o Operand) Is8Bit() bool  { return len(o.Name) == 1 }
 
 type Operands []Operand
 
-func (ops Operands) First() Operand { return ops[0] }
-func (ops Operands) Last() Operand  { return ops[len(ops)-1] }
+func (ops Operands) First() Operand  { return ops[0] }
+func (ops Operands) Second() Operand { return ops[1] }
+func (ops Operands) Last() Operand   { return ops[len(ops)-1] }
 
 type Op struct {
 	Mnemonic  string            `json:"mnemonic"`
@@ -36,6 +58,14 @@ type Op struct {
 	Flags     map[string]string `json:"flags"`
 	ID        string
 	Code      int
+}
+
+func (o Op) String() string {
+	var parts []string
+	for _, arg := range o.Operands {
+		parts = append(parts, arg.String())
+	}
+	return fmt.Sprintf("%s %s    code=%#02x", o.Mnemonic, strings.Join(parts, ","), o.Code)
 }
 
 func (o Op) FirstArg() Operand {
@@ -115,6 +145,7 @@ func run() error {
 			"ADD",
 			"INC",
 			"DEC",
+			"LD",
 		}
 		if !slices.Contains(keep, v.Mnemonic) {
 			delete(data.Unprefixed, code)
@@ -123,8 +154,6 @@ func run() error {
 		v.ID = fmt.Sprintf("%s_%s", v.Mnemonic, code[2:])
 		i64, _ := strconv.ParseInt(code, 0, 64)
 		v.Code = int(i64)
-		// v.Code, _ = strconv.Atoi(code[2:]) // "0xab" -> 0xab
-		fmt.Printf("parsed %s -> %d\n", code, v.Code)
 
 		data.Unprefixed[code] = v
 		if len(v.Cycles) > 1 {
@@ -163,7 +192,7 @@ const codeTemplate = `package gameboy
 type Instruction func(cpu *CPU)
 
 {{ range $key, $op := .Unprefixed }}
-// {{$op.Mnemonic}} {{$key}} {{operands $op}}
+// {{$op.String}}
 func {{$op.ID}}(cpu *CPU) {
 	{{ if eq "ADD" $op.Mnemonic }} 
 		{{ template "add" $op.DataAdd }}
@@ -171,6 +200,8 @@ func {{$op.ID}}(cpu *CPU) {
 		{{ template "inc" $op.DataInc }}
 	{{ else if eq "DEC" $op.Mnemonic }}
 		{{ template "dec" $op.DataDec }}
+	{{ else if eq "LD" $op.Mnemonic }}
+		{{ template "ld" $op.DataLd }}
 	{{else}}
 		// TODO: {{$op.ID}}
 	{{end }}
@@ -198,41 +229,6 @@ type templDataAdd struct {
 }
 
 var tmpl = template.New("main")
-
-func getRegister(name string) (reg string) {
-	defer func() {
-		reg = "cpu." + reg // add accessor
-	}()
-	switch name {
-	case "A", "F", "B", "C", "D", "E", "H", "L":
-		// direct access
-		reg = name
-	case "PC", "SP":
-		// direct access
-		reg = name
-	case "HL", "BC", "DE":
-		// via method
-		reg = name + "()"
-	}
-	return
-}
-
-// inc bc, de, hl, sp, b, d, h, (hl), c, e, l, a
-// writes a line of code that sets the register to variable name
-// varname is the variable name holding the value
-func setRegister(name string, varname string) string {
-	switch name {
-	case "A", "C", "E", "L", "B", "D", "H", "SP":
-		return fmt.Sprintf("cpu.%s = %s", name, varname)
-	case "BC", "DE", "HL":
-		r1 := string(name[0])
-		r2 := string(name[1])
-		return fmt.Sprintf("cpu.%s, cpu.%s = splitU16(%s)", r1, r2, varname)
-	default:
-		return fmt.Sprintf("// todo: setreg... %s %s", name, varname)
-	}
-}
-
 // e8, n8, a8,
 // e8: XOR 0xee
 // n8: LD 0xf8
@@ -273,12 +269,9 @@ var templAdd = template.Must(tmpl.New("add").
 {{end }}
 `))
 
-func formatFile() {
+func formatFile() error {
 	cmd := exec.Command("gofmt", "-w", dest)
-	if err := cmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to format %s: %v\n", dest, err)
-		return
-	}
+	return cmd.Run()
 }
 
 func main() {
@@ -286,7 +279,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	formatFile()
+	if err := formatFile(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to format %s: %v\n", dest, err)
+		os.Exit(1)
+		return
+	}
 
-	fmt.Printf("I am generated\n")
+	fmt.Printf("Code generated\n")
 }
