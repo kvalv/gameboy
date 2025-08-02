@@ -10,7 +10,7 @@ var templLd = template.Must(tmpl.New("ld").
 	Parse(`
 {{if eq .Code 0xF8}}
 	e := {{get "e8" true}}
-	res, flags := addSigned({{get "SP" true}}, e)
+	res, flags := add({{get "SP" true}}, e)
 	{{set "HL" true "res"}}
 	cpu.F = flags
 {{else}}
@@ -34,13 +34,6 @@ var templLd = template.Must(tmpl.New("ld").
 
 {{end}}
 `))
-
-// either a register, or a constant, or indirect access (mem location)
-type UnionThingy struct {
-	Register string // name
-	Memory   uint16 // location
-	Direct   byte   // u8,
-}
 
 type templDataLd struct {
 	Dst           string // name of register, where data is written

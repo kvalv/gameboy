@@ -21,4 +21,34 @@ func TestParts(t *testing.T) {
 		}
 	})
 
+	t.Run("add", func(t *testing.T) {
+
+		chec := func(wantVal any, wantFlag Flags, gotVal any, gotFlag FlagRegister) {
+			if wantVal != gotVal {
+				t.Fatalf("expected %d, got %d", wantVal, gotVal)
+			}
+			if uint8(gotFlag) != uint8(wantFlag) {
+				t.Fatalf("flag mismatch")
+			}
+		}
+
+		{
+			val, fl := add(uint8(100), int8(-5))
+			chec(uint8(95), 0, val, fl)
+		}
+		{
+			val, fl := add(uint8(4), int8(-6))
+			chec(uint8(254), FLAGC, val, fl)
+		}
+		{
+			val, fl := add(uint8(4), int8(-4))
+			chec(uint8(0), FLAGZ, val, fl)
+		}
+		{
+			val, fl := add(uint16(0xffaf), int8(-0x01))
+			chec(uint16(0xffae), 0, val, fl)
+		}
+
+	})
+
 }

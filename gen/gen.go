@@ -75,18 +75,6 @@ func (o Op) FirstArg() Operand {
 	return o.Operands[0]
 }
 
-type InstructionType int
-
-const (
-	ITypeMisc InstructionType = iota
-	ITypeJump
-	ITypeLoad8
-	ITypeLoad16
-	IArithmetic8
-	IArithmetic16
-	IRotation8
-)
-
 func (o Op) Is16Bit() bool { return !o.FirstArg().Is16Bit() }
 func (o Op) Is8Bit() bool  { return o.FirstArg().Is8Bit() }
 func (o Op) Foo() string   { return fmt.Sprintf("Foo %s", o.Mnemonic) }
@@ -96,34 +84,6 @@ func (o Op) CycleCount() int {
 		count += c
 	}
 	return count
-}
-
-func (o Op) DataAdd() templDataAdd {
-	return templDataAdd{
-		Name:      o.Operands.Last().Name,
-		Instr16:   o.Operands.Last().Is16Bit(),
-		Immediate: o.Operands.Last().Immediate,
-		DestA:     o.Operands.First().Name == "A",
-	}
-}
-
-func (o Op) InstructionType() InstructionType {
-	if o.Code > 0xff {
-		// ...
-		return ITypeMisc
-	}
-
-	switch o.Mnemonic {
-	case "NOP", "STOP", "HALT", "PREFIX", "EI", "DI":
-		return ITypeMisc
-	case "ADD", "INC", "DEC":
-		if o.FirstArg().Is8Bit() {
-			return IArithmetic8
-		}
-		return IArithmetic16
-	}
-
-	return ITypeMisc // TODO
 }
 
 func run() error {
@@ -216,59 +176,7 @@ var ops = map[uint8]Instruction{
 }
 `
 
-type Value struct {
-	Op    *Operand
-	Const *uint8
-}
-
-type templDataAdd struct {
-	Name      string // name of register for what to add
-	Instr16   bool   // if true, then write to HL, otherwise write to A
-	Immediate bool   // if not true, we require a load
-	DestA     bool
-}
-
 var tmpl = template.New("main")
-
-// e8, n8, a8,
-// e8: XOR 0xee
-// n8: LD 0xf8
-// a8: LDH
-// n8: 0xc6
-
-var templAdd = template.Must(tmpl.New("add").
-	Funcs(template.FuncMap{
-		"reg": getRegister,
-	}).
-	Parse(`
-{{ if eq .Name "e8"}} {{/* special case: add to stack pointer */}}
-	var n int16
-	cpu.load(cpu.PC, &n)
-	res, flags := cpu.AddSigned16(int16(cpu.A), n)
-	cpu.PC = uint16(res)
-	cpu.F = flags
-{{ else if eq .Name "n8"}} {{/* Add immediate data */}}
-	var n uint8
-	cpu.load(cpu.PC, &n)
-	cpu.A, cpu.F = cpu.Add(cpu.A, n)
-{{ else if not .Immediate }}
-	// not immediate brah
-	var n uint8
-	cpu.load({{reg .Name}}, &n)
-	s8 := n // TODO: signed8(n)
-	cpu.A, cpu.F = cpu.Add(cpu.A, s8)
-{{ else if .Instr16 }}
-	res, flags := cpu.Add16(cpu.HL(), {{ reg .Name }})
-	{{ if .DestA}}
-	_, cpu.A = splitU16(res)
-	{{else}}
-	cpu.H, cpu.L = splitU16(res)
-	{{end }}
-	cpu.F = FlagRegister(flags)
-{{ else }}
-	cpu.A, cpu.F = cpu.Add(cpu.A, {{reg .Name }})
-{{end }}
-`))
 
 func formatFile() error {
 	cmd := exec.Command("gofmt", "-w", dest)

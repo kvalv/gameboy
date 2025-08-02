@@ -44,7 +44,7 @@ func TestOpcodes(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cpu := NewCPU()
+			cpu := &CPU{}
 			cpu.A = tc.lhs
 			cpu.B = tc.rhs
 

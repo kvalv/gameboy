@@ -4,34 +4,23 @@ import "text/template"
 
 var templInc = template.Must(tmpl.New("inc").
 	Funcs(template.FuncMap{
-		"reg":    getRegister,
-		"setreg": setRegister,
+		"get": get,
+		"set": set,
 	}).
 	Parse(`
-{{if .Immediate}}
-	res, flags := add({{reg .Name}}, 0x01)
-	{{setreg .Name "res"}}
+	res, flags := add({{get .Name .Immediate}}, 0x01)
 	cpu.F = flags
-{{else}}
-	// Increments data at the absolute address specified by the register
-	var val uint8
-	cpu.load({{reg .Name}}, &val)
-	next, flags := cpu.Add(val, 0x01)
-	cpu.WriteMemory({{reg .Name}}, next)
-	cpu.F = FlagRegister(flags)
-{{end}}
+	{{set .Name .Immediate "res"}}
 `))
 
 type templDataInc struct {
 	Name      string // name of register for what to add
-	Instr16   bool
-	Immediate bool // if not true, we require a load
+	Immediate bool   // if not true, we require a load
 }
 
 func (o Op) DataInc() templDataInc {
 	return templDataInc{
 		Name:      o.Operands.First().Name,
 		Immediate: o.Operands.First().Immediate,
-		Instr16:   o.Operands.First().Is16Bit(),
 	}
 }

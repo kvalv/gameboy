@@ -65,62 +65,9 @@ func (cpu *CPU) Err() error {
 	return cpu.err
 }
 
-func NewCPU() *CPU {
-	return &CPU{}
-}
-
 func (cpu *CPU) HL() uint16 { return concatU16(cpu.H, cpu.L) }
 func (cpu *CPU) BC() uint16 { return concatU16(cpu.B, cpu.C) }
 func (cpu *CPU) DE() uint16 { return concatU16(cpu.D, cpu.E) }
-
-func (cpu *CPU) Add(lhs, rhs uint8) (res uint8, flags FlagRegister) {
-	var fl Flags
-	res = lhs + rhs
-	if res < lhs || res < rhs {
-		fl |= FLAGC
-	}
-	if res == 0 {
-		fl |= FLAGZ
-	}
-	return res, FlagRegister(fl)
-}
-
-func (cpu *CPU) Add16(lhs, rhs uint16) (res uint16, flags FlagRegister) {
-	var fl Flags
-	res = lhs + rhs
-	if res < lhs || res < rhs {
-		fl |= FLAGC
-	}
-	if res == 0 {
-		fl |= FLAGZ
-	}
-	return res, FlagRegister(fl)
-}
-
-func (cpu *CPU) Dec(v uint8) (res uint8, flags FlagRegister) {
-	var fl Flags
-	res = res - v
-	if v > res {
-		fl |= FLAGC
-	}
-	if res == 0 {
-		fl |= FLAGZ
-	}
-	return res, FlagRegister(fl)
-}
-
-func (cpu *CPU) AddSigned16(lhs, rhs int16) (res int16, flags FlagRegister) {
-	var fl Flags
-	res = lhs + rhs
-	// TODO: finish this
-	return res, FlagRegister(fl)
-}
-func (cpu *CPU) AddSigned8(lhs, rhs int8) (res int8, flags FlagRegister) {
-	var fl Flags
-	res = lhs + rhs
-	// TODO: finish this
-	return res, FlagRegister(fl)
-}
 
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
@@ -139,42 +86,12 @@ func (cpu *CPU) load(addr uint16, dst any) {
 		panic(fmt.Sprintf("cpu.load: not implemented for %T", dst))
 	}
 }
-func (cpu *CPU) loadU16(addr uint16) uint16 {
-	var dst uint16
-	cpu.load(addr, &dst)
-	return dst
-}
 func (cpu *CPU) loadU8(addr uint16) uint8 {
 	var dst uint8
 	cpu.load(addr, &dst)
 	return dst
 }
-func (cpu *CPU) loadI8(addr uint16) int8 {
-	var dst int8
-	cpu.load(addr, &dst)
-	return dst
-}
-func (cpu *CPU) loadI16(addr uint16) int16 {
-	var dst int16
-	cpu.load(addr, &dst)
-	return dst
-}
 
-// load memory for stack pointer
-func (cpu *CPU) readStackU8() uint8 {
-	var value uint8
-	cpu.load(cpu.SP, &value)
-	cpu.IncProgramCounter()
-	return value
-}
-func (cpu *CPU) readStackU16() uint16 {
-	var lsb, msb uint8
-	cpu.load(cpu.SP, &lsb)
-	cpu.SP++
-	cpu.load(cpu.SP, &msb)
-	cpu.SP++
-	return concatU16(msb, lsb)
-}
 func (cpu *CPU) readU8(addr uint16) uint8 {
 	var value uint8
 	cpu.load(addr, &value)
@@ -190,12 +107,6 @@ func (cpu *CPU) readI8(addr uint16) int8 {
 	var value byte
 	cpu.load(addr, &value)
 	return int8(value)
-}
-func (cpu *CPU) readI16(addr uint16) int16 {
-	var msb, lsb byte
-	cpu.load(addr, &msb)
-	cpu.load(addr+1, &lsb)
-	return concatI16(msb, lsb)
 }
 
 func (cpu *CPU) WriteMemory(addr uint16, value any) {

@@ -26,8 +26,8 @@ func LD_02(cpu *CPU) {
 func INC_03(cpu *CPU) {
 
 	res, flags := add(cpu.BC(), 0x01)
-	cpu.B, cpu.C = splitU16(res)
 	cpu.F = flags
+	cpu.B, cpu.C = split(res)
 
 	cpu.cycles += 8
 }
@@ -36,8 +36,8 @@ func INC_03(cpu *CPU) {
 func INC_04(cpu *CPU) {
 
 	res, flags := add(cpu.B, 0x01)
-	cpu.B = res
 	cpu.F = flags
+	cpu.B = res
 
 	cpu.cycles += 4
 }
@@ -46,8 +46,8 @@ func INC_04(cpu *CPU) {
 func DEC_05(cpu *CPU) {
 
 	res, flags := sub(cpu.B, 0x01)
-	cpu.B = res
 	cpu.F = flags
+	cpu.B = res
 
 	cpu.cycles += 4
 }
@@ -75,11 +75,11 @@ func LD_08(cpu *CPU) {
 // ADD HL,BC    code=0x09
 func ADD_09(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.HL(), cpu.BC())
-
-	cpu.H, cpu.L = splitU16(res)
-
-	cpu.F = FlagRegister(flags)
+	lhs := cpu.HL()
+	rhs := cpu.BC()
+	res, flags := add(lhs, rhs)
+	cpu.H, cpu.L = split(res)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -98,8 +98,8 @@ func LD_0A(cpu *CPU) {
 func DEC_0B(cpu *CPU) {
 
 	res, flags := sub(cpu.BC(), 0x01)
-	cpu.B, cpu.C = splitU16(res)
 	cpu.F = flags
+	cpu.B, cpu.C = split(res)
 
 	cpu.cycles += 8
 }
@@ -108,8 +108,8 @@ func DEC_0B(cpu *CPU) {
 func INC_0C(cpu *CPU) {
 
 	res, flags := add(cpu.C, 0x01)
-	cpu.C = res
 	cpu.F = flags
+	cpu.C = res
 
 	cpu.cycles += 4
 }
@@ -118,8 +118,8 @@ func INC_0C(cpu *CPU) {
 func DEC_0D(cpu *CPU) {
 
 	res, flags := sub(cpu.C, 0x01)
-	cpu.C = res
 	cpu.F = flags
+	cpu.C = res
 
 	cpu.cycles += 4
 }
@@ -158,8 +158,8 @@ func LD_12(cpu *CPU) {
 func INC_13(cpu *CPU) {
 
 	res, flags := add(cpu.DE(), 0x01)
-	cpu.D, cpu.E = splitU16(res)
 	cpu.F = flags
+	cpu.D, cpu.E = split(res)
 
 	cpu.cycles += 8
 }
@@ -168,8 +168,8 @@ func INC_13(cpu *CPU) {
 func INC_14(cpu *CPU) {
 
 	res, flags := add(cpu.D, 0x01)
-	cpu.D = res
 	cpu.F = flags
+	cpu.D = res
 
 	cpu.cycles += 4
 }
@@ -178,8 +178,8 @@ func INC_14(cpu *CPU) {
 func DEC_15(cpu *CPU) {
 
 	res, flags := sub(cpu.D, 0x01)
-	cpu.D = res
 	cpu.F = flags
+	cpu.D = res
 
 	cpu.cycles += 4
 }
@@ -197,11 +197,11 @@ func LD_16(cpu *CPU) {
 // ADD HL,DE    code=0x19
 func ADD_19(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.HL(), cpu.DE())
-
-	cpu.H, cpu.L = splitU16(res)
-
-	cpu.F = FlagRegister(flags)
+	lhs := cpu.HL()
+	rhs := cpu.DE()
+	res, flags := add(lhs, rhs)
+	cpu.H, cpu.L = split(res)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -220,8 +220,8 @@ func LD_1A(cpu *CPU) {
 func DEC_1B(cpu *CPU) {
 
 	res, flags := sub(cpu.DE(), 0x01)
-	cpu.D, cpu.E = splitU16(res)
 	cpu.F = flags
+	cpu.D, cpu.E = split(res)
 
 	cpu.cycles += 8
 }
@@ -230,8 +230,8 @@ func DEC_1B(cpu *CPU) {
 func INC_1C(cpu *CPU) {
 
 	res, flags := add(cpu.E, 0x01)
-	cpu.E = res
 	cpu.F = flags
+	cpu.E = res
 
 	cpu.cycles += 4
 }
@@ -240,8 +240,8 @@ func INC_1C(cpu *CPU) {
 func DEC_1D(cpu *CPU) {
 
 	res, flags := sub(cpu.E, 0x01)
-	cpu.E = res
 	cpu.F = flags
+	cpu.E = res
 
 	cpu.cycles += 4
 }
@@ -285,8 +285,8 @@ func LD_22(cpu *CPU) {
 func INC_23(cpu *CPU) {
 
 	res, flags := add(cpu.HL(), 0x01)
-	cpu.H, cpu.L = splitU16(res)
 	cpu.F = flags
+	cpu.H, cpu.L = split(res)
 
 	cpu.cycles += 8
 }
@@ -295,8 +295,8 @@ func INC_23(cpu *CPU) {
 func INC_24(cpu *CPU) {
 
 	res, flags := add(cpu.H, 0x01)
-	cpu.H = res
 	cpu.F = flags
+	cpu.H = res
 
 	cpu.cycles += 4
 }
@@ -305,8 +305,8 @@ func INC_24(cpu *CPU) {
 func DEC_25(cpu *CPU) {
 
 	res, flags := sub(cpu.H, 0x01)
-	cpu.H = res
 	cpu.F = flags
+	cpu.H = res
 
 	cpu.cycles += 4
 }
@@ -324,11 +324,11 @@ func LD_26(cpu *CPU) {
 // ADD HL,HL    code=0x29
 func ADD_29(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.HL(), cpu.HL())
-
-	cpu.H, cpu.L = splitU16(res)
-
-	cpu.F = FlagRegister(flags)
+	lhs := cpu.HL()
+	rhs := cpu.HL()
+	res, flags := add(lhs, rhs)
+	cpu.H, cpu.L = split(res)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -347,8 +347,8 @@ func LD_2A(cpu *CPU) {
 func DEC_2B(cpu *CPU) {
 
 	res, flags := sub(cpu.HL(), 0x01)
-	cpu.H, cpu.L = splitU16(res)
 	cpu.F = flags
+	cpu.H, cpu.L = split(res)
 
 	cpu.cycles += 8
 }
@@ -357,8 +357,8 @@ func DEC_2B(cpu *CPU) {
 func INC_2C(cpu *CPU) {
 
 	res, flags := add(cpu.L, 0x01)
-	cpu.L = res
 	cpu.F = flags
+	cpu.L = res
 
 	cpu.cycles += 4
 }
@@ -367,8 +367,8 @@ func INC_2C(cpu *CPU) {
 func DEC_2D(cpu *CPU) {
 
 	res, flags := sub(cpu.L, 0x01)
-	cpu.L = res
 	cpu.F = flags
+	cpu.L = res
 
 	cpu.cycles += 4
 }
@@ -412,8 +412,8 @@ func LD_32(cpu *CPU) {
 func INC_33(cpu *CPU) {
 
 	res, flags := add(cpu.SP, 0x01)
-	cpu.SP = res
 	cpu.F = flags
+	cpu.SP = res
 
 	cpu.cycles += 8
 }
@@ -421,12 +421,9 @@ func INC_33(cpu *CPU) {
 // INC (HL)    code=0x34
 func INC_34(cpu *CPU) {
 
-	// Increments data at the absolute address specified by the register
-	var val uint8
-	cpu.load(cpu.HL(), &val)
-	next, flags := cpu.Add(val, 0x01)
-	cpu.WriteMemory(cpu.HL(), next)
-	cpu.F = FlagRegister(flags)
+	res, flags := add(cpu.loadU8(cpu.HL()), 0x01)
+	cpu.F = flags
+	cpu.WriteMemory(cpu.HL(), res)
 
 	cpu.cycles += 12
 }
@@ -434,11 +431,9 @@ func INC_34(cpu *CPU) {
 // DEC (HL)    code=0x35
 func DEC_35(cpu *CPU) {
 
-	var val uint8
-	cpu.load(cpu.HL(), &val)
-	next, flags := sub(val, 0x01)
-	cpu.WriteMemory(cpu.HL(), next)
+	res, flags := sub(cpu.loadU8(cpu.HL()), 0x01)
 	cpu.F = flags
+	cpu.WriteMemory(cpu.HL(), res)
 
 	cpu.cycles += 12
 }
@@ -456,11 +451,11 @@ func LD_36(cpu *CPU) {
 // ADD HL,SP    code=0x39
 func ADD_39(cpu *CPU) {
 
-	res, flags := cpu.Add16(cpu.HL(), cpu.SP)
-
-	cpu.H, cpu.L = splitU16(res)
-
-	cpu.F = FlagRegister(flags)
+	lhs := cpu.HL()
+	rhs := cpu.SP
+	res, flags := add(lhs, rhs)
+	cpu.H, cpu.L = split(res)
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -479,8 +474,8 @@ func LD_3A(cpu *CPU) {
 func DEC_3B(cpu *CPU) {
 
 	res, flags := sub(cpu.SP, 0x01)
-	cpu.SP = res
 	cpu.F = flags
+	cpu.SP = res
 
 	cpu.cycles += 8
 }
@@ -489,8 +484,8 @@ func DEC_3B(cpu *CPU) {
 func INC_3C(cpu *CPU) {
 
 	res, flags := add(cpu.A, 0x01)
-	cpu.A = res
 	cpu.F = flags
+	cpu.A = res
 
 	cpu.cycles += 4
 }
@@ -499,8 +494,8 @@ func INC_3C(cpu *CPU) {
 func DEC_3D(cpu *CPU) {
 
 	res, flags := sub(cpu.A, 0x01)
-	cpu.A = res
 	cpu.F = flags
+	cpu.A = res
 
 	cpu.cycles += 4
 }
@@ -1148,7 +1143,11 @@ func LD_7F(cpu *CPU) {
 // ADD A,B    code=0x80
 func ADD_80(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.B)
+	lhs := cpu.A
+	rhs := cpu.B
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1156,7 +1155,11 @@ func ADD_80(cpu *CPU) {
 // ADD A,C    code=0x81
 func ADD_81(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.C)
+	lhs := cpu.A
+	rhs := cpu.C
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1164,7 +1167,11 @@ func ADD_81(cpu *CPU) {
 // ADD A,D    code=0x82
 func ADD_82(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.D)
+	lhs := cpu.A
+	rhs := cpu.D
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1172,7 +1179,11 @@ func ADD_82(cpu *CPU) {
 // ADD A,E    code=0x83
 func ADD_83(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.E)
+	lhs := cpu.A
+	rhs := cpu.E
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1180,7 +1191,11 @@ func ADD_83(cpu *CPU) {
 // ADD A,H    code=0x84
 func ADD_84(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.H)
+	lhs := cpu.A
+	rhs := cpu.H
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1188,7 +1203,11 @@ func ADD_84(cpu *CPU) {
 // ADD A,L    code=0x85
 func ADD_85(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.L)
+	lhs := cpu.A
+	rhs := cpu.L
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1196,11 +1215,11 @@ func ADD_85(cpu *CPU) {
 // ADD A,(HL)    code=0x86
 func ADD_86(cpu *CPU) {
 
-	// not immediate brah
-	var n uint8
-	cpu.load(cpu.HL(), &n)
-	s8 := n // TODO: signed8(n)
-	cpu.A, cpu.F = cpu.Add(cpu.A, s8)
+	lhs := cpu.A
+	rhs := cpu.loadU8(cpu.HL())
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -1208,7 +1227,11 @@ func ADD_86(cpu *CPU) {
 // ADD A,A    code=0x87
 func ADD_87(cpu *CPU) {
 
-	cpu.A, cpu.F = cpu.Add(cpu.A, cpu.A)
+	lhs := cpu.A
+	rhs := cpu.A
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 4
 }
@@ -1216,9 +1239,11 @@ func ADD_87(cpu *CPU) {
 // ADD A,n8    code=0xc6
 func ADD_C6(cpu *CPU) {
 
-	var n uint8
-	cpu.load(cpu.PC, &n)
-	cpu.A, cpu.F = cpu.Add(cpu.A, n)
+	lhs := cpu.A
+	rhs := cpu.readU8(cpu.PC)
+	res, flags := add(lhs, rhs)
+	cpu.A = res
+	cpu.F = flags
 
 	cpu.cycles += 8
 }
@@ -1226,10 +1251,10 @@ func ADD_C6(cpu *CPU) {
 // ADD SP,e8    code=0xe8
 func ADD_E8(cpu *CPU) {
 
-	var n int16
-	cpu.load(cpu.PC, &n)
-	res, flags := cpu.AddSigned16(int16(cpu.A), n)
-	cpu.PC = uint16(res)
+	lhs := cpu.SP
+	rhs := cpu.readI8(cpu.PC)
+	res, flags := add(lhs, rhs)
+	cpu.SP = res
 	cpu.F = flags
 
 	cpu.cycles += 16
@@ -1249,7 +1274,7 @@ func LD_EA(cpu *CPU) {
 func LD_F8(cpu *CPU) {
 
 	e := cpu.readI8(cpu.PC)
-	res, flags := addSigned(cpu.SP, e)
+	res, flags := add(cpu.SP, e)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
 

@@ -27,10 +27,15 @@ type Value interface {
 	uint8 | uint16
 }
 
-func sub[V Value](lhs, rhs V) (V, FlagRegister) {
-	out := lhs - rhs
+// func sub[V Value](lhs, rhs V) (V, FlagRegister) {
+func sub[L Value, R int | uint8 | uint16 | int8](lhs L, rhs R) (L, FlagRegister) {
+	v := (int(lhs) - int(rhs))
+	out := L(v)
 	var fl Flags
-	if lhs < rhs {
+	if v < 0 {
+		fl |= FLAGC
+	} else if v > int(out) {
+		// this means we had an overflow, e.g. 0x00 - 0x01 = 0xFF
 		fl |= FLAGC
 	}
 	if out == 0 {
@@ -39,22 +44,11 @@ func sub[V Value](lhs, rhs V) (V, FlagRegister) {
 	return out, FlagRegister(fl)
 }
 
-func add[V Value](lhs, rhs V) (V, FlagRegister) {
-	out := lhs + rhs
+func add[L uint8 | uint16, R int | uint8 | uint16 | int8](lhs L, rhs R) (L, FlagRegister) {
+	v := (int(lhs) + int(rhs))
+	out := L(v)
 	var fl Flags
-	if out < lhs || out < rhs {
-		fl |= FLAGC
-	}
-	if out == 0 {
-		fl |= FLAGZ
-	}
-	return out, FlagRegister(fl)
-}
-
-func addSigned[V uint8 | uint16](lhs V, rhs int8) (V, FlagRegister) {
-	out := V(int16(lhs) + int16(rhs))
-	var fl Flags
-	if out < lhs || (out > 0 && out < V(rhs)) {
+	if v != int(out) {
 		fl |= FLAGC
 	}
 	if out == 0 {
