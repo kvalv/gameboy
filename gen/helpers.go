@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 // generates the code that fetches a value as an expression,
@@ -42,24 +41,16 @@ func get(name string, immediate bool) string {
 // e.g. `cpu.WriteMemory(cpu.A, data)` or `cpu.A = cpu.B`
 func set(name string, immediate bool, varname string) string {
 	if !immediate {
-		switch name {
-		case "a16":
-			var s strings.Builder
-			// fmt.Fprintf(&s, "msb, lsb := split(0x1122)\n")
-			fmt.Fprintf(&s, "cpu.WriteMemory(%s, %s)\n", get(name, true), varname)
-			return s.String()
-		default:
-			return fmt.Sprintf("cpu.WriteMemory(%s, %s)", get(name, true), varname)
-		}
+		return fmt.Sprintf("cpu.WriteMemory(%s, %s)", get(name, true), varname)
 	}
 	switch name {
 	case "A", "C", "E", "L", "B", "D", "H", "SP":
 		return fmt.Sprintf("cpu.%s = %s", name, varname)
 	case "BC", "DE", "HL":
-		r1 := string(name[0])
-		r2 := string(name[1])
-		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", r1, r2, varname)
+		msb := string(name[0])
+		lsb := string(name[1])
+		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", msb, lsb, varname)
 	default:
-		return fmt.Sprintf("// todo: setreg... %s %s", name, varname)
+		return fmt.Sprintf("// todo: set %s %s", name, varname)
 	}
 }

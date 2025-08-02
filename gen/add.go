@@ -21,7 +21,7 @@ type templDataAdd struct {
 	RhsImmediate bool
 }
 
-func (o Op) DataAdd() templDataAdd {
+func (o Opcode) DataAdd() templDataAdd {
 	return templDataAdd{
 		Dst:          o.Operands.First().Name,
 		Rhs:          o.Operands.Second().Name,

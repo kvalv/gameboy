@@ -1,0 +1,75 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"text/template"
+)
+
+func main() {
+	const DEST = "instructions.go"
+
+	if err := generateInstructions(DEST); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	if err := formatFile(DEST); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to format %s: %v\n", DEST, err)
+		os.Exit(1)
+		return
+	}
+
+	fmt.Printf("Code generated\n")
+}
+
+// Reads from Opcodes.json and generates code that gets written to file.
+func generateInstructions(file string) error {
+	main, _, err := loadOpcodes("gen/Opcodes.json")
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, main); err != nil {
+		return fmt.Errorf("failed to generate code: %w", err)
+	}
+
+	return nil
+}
+
+var tmpl = template.Must(template.New("main").Parse(`package gameboy
+type Instruction func(cpu *CPU)
+
+{{ range . }}
+// {{.String}}
+func {{.ID}}(cpu *CPU) {
+	{{ if eq "ADD" .Mnemonic }} 
+		{{ template "add" .DataAdd }}
+	{{ else if eq "INC" .Mnemonic }}
+		{{ template "inc" .DataInc }}
+	{{ else if eq "DEC" .Mnemonic }}
+		{{ template "dec" .DataDec }}
+	{{ else if eq "LD" .Mnemonic }}
+		{{ template "ld" .DataLd }}
+	{{else}}
+		// TODO: {{.ID}}
+	{{end}}
+	cpu.cycles += {{.CycleCount}}
+}
+{{end}}
+
+var ops = map[uint8]Instruction{
+	{{ range . -}}
+	{{printf "%#x" .Code}}: {{.ID}},
+	{{end}}
+}
+`))
+
+// formats file. The generated file may look crap, so we pass it to gofmt to make
+// it a bit prettier.
+func formatFile(file string) error {
+	cmd := exec.Command("gofmt", "-w", file)
+	return cmd.Run()
+}

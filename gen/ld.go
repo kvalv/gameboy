@@ -19,14 +19,12 @@ var templLd = template.Must(tmpl.New("ld").
 	{{set .Dst .DstImmediate "data"}}
 
 	{{if .PostIncrement -}}
-	// post increment
 	incr, flags := add({{get .Dst true}}, 0x01)
 	{{set .Dst true "incr"}}
 	cpu.F = flags
 	{{end}}
 
 	{{if .PostDecrement -}}
-	// post decrement
 	decr, flags := sub({{get .Dst true}}, 0x01)
 	{{set .Dst true "decr"}}
 	cpu.F = flags
@@ -45,7 +43,7 @@ type templDataLd struct {
 	PostDecrement bool
 }
 
-func (o Op) DataLd() templDataLd {
+func (o Opcode) DataLd() templDataLd {
 	return templDataLd{
 		Dst:           o.Operands.First().Name,
 		DstImmediate:  o.Operands.First().Immediate,

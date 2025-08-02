@@ -18,7 +18,7 @@ type templDataInc struct {
 	Immediate bool   // if not true, we require a load
 }
 
-func (o Op) DataInc() templDataInc {
+func (o Opcode) DataInc() templDataInc {
 	return templDataInc{
 		Name:      o.Operands.First().Name,
 		Immediate: o.Operands.First().Immediate,

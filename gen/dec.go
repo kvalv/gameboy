@@ -18,7 +18,7 @@ type templDataDec struct {
 	Immediate bool   // if not true, we require a load
 }
 
-func (o Op) DataDec() templDataDec {
+func (o Opcode) DataDec() templDataDec {
 	return templDataDec{
 		Name:      o.Operands.First().Name,
 		Immediate: o.Operands.First().Immediate,
