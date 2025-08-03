@@ -442,7 +442,6 @@ func TestInstructions(t *testing.T) {
 				D: 0x11,
 				E: 0x22,
 			},
-			debug: true,
 			initMem: func(m *Memory) {
 				m.Write(0xD5) // PUSH DE
 				m.Write(0xC1) // POP BC
@@ -453,11 +452,196 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectBC(0x1122)
 			},
 		},
+		{
+			desc: "POP BC 0xC1 - empty stack",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write(0xC1)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectErr(t, ErrStackUnderflow)
+			},
+		},
+		{
+			// a subroutine that adds two numbers, then returns. We check whether the
+			// summed value is in the accumulator and the PC is as expected
+			desc: "RET 0xC9",
+			cpu: CPU{
+				A: 0x01,
+				E: 0x02,
+			},
+			initMem: func(m *Memory) {
+				m.Write("CALL a16", 0x22, 0x11)
+				m.Write("STOP")
+				m.CursorAt(0x1122)
+				m.Write("ADD A,E")
+				m.Write("RET")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x03)
+				cpu.ExpectPC(0x04)
+			},
+		},
+		{
+			desc: "SUB A,B 0x90",
+			cpu: CPU{
+				A: 0x01,
+				B: 0x03,
+			},
+			initMem: func(m *Memory) {
+				m.Write("SUB A,B")
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0xFE)
+				cpu.ExpectFlagCarry()
+			},
+		},
+		{
+			desc: "SUB A,(HL) 0x96",
+			cpu: CPU{
+				A: 0x02,
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("SUB A,(HL)")
+				m.Write("STOP")
+				m.CursorAt(0x1122)
+				m.Write(0x01)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x01)
+			},
+		},
+		{
+			desc: "SUB A,A 0x97",
+			cpu: CPU{
+				A: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("SUB A,A")
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x00)
+				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "OR A,B 0xB0",
+			cpu: CPU{
+				A: 0b11000011,
+				B: 0b00001111,
+			},
+			initMem: func(m *Memory) {
+				m.Write("OR A,B")
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b11001111)
+			},
+		},
+		{
+			desc: "OR A,(HL) 0xB6",
+			cpu: CPU{
+				A: 0b11000011,
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("OR A,(HL)")
+				m.Write("STOP")
+				m.CursorAt(0x1122)
+				m.Write(0b00001111)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b11001111)
+			},
+		},
+		{
+			desc: "XOR A,B 0xA8",
+			cpu: CPU{
+				A: 0b11000011,
+				B: 0b00001111,
+			},
+			initMem: func(m *Memory) {
+				m.Write("XOR A,B")
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b11001100)
+			},
+		},
+		{
+			desc: "XOR A,(HL) 0xAE",
+			cpu: CPU{
+				A: 0b11000011,
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("XOR A,(HL)")
+				m.Write("STOP")
+				m.CursorAt(0x1122)
+				m.Write(0b00001111)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b11001100)
+			},
+		},
+		{
+			desc: "CP A,B 0xB8",
+			cpu: CPU{
+				A: 0x01,
+				B: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("CP A,B")
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZero()
+				cpu.ExpectA(0x01)
+			},
+		},
+		{
+			desc: "CP A,(HL) 0xBE",
+			cpu: CPU{
+				A: 0x01,
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("CP A,(HL)")
+				m.CursorAt(0x1122)
+				m.Write(0x02)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagCarry()
+				cpu.ExpectA(0x01)
+			},
+		},
+		{
+			desc: "CP A,n8 0xFE",
+			cpu: CPU{
+				A: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("CP A,n8", 0x00)
+				m.Write("STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZeroUnset()
+				cpu.ExpectFlagCarryUnset()
+				cpu.ExpectA(0x01)
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
 		if cpu.SP == 0 {
-			// cpu.SP = 0xffff
+			cpu.SP = 0xffff
 		}
 	}
 
@@ -467,10 +651,7 @@ func TestInstructions(t *testing.T) {
 			initCPU(cpu)
 			mem := NewMemory()
 			tc.initMem(mem)
-			if err := Run(cpu, mem, logger(tc.debug)); err != nil && !errors.Is(err, ErrNoMoreInstructions) {
-				fmt.Println("")
-				t.Fatalf("failed to run: %v", err)
-			}
+			Run(cpu, mem, logger(tc.debug))
 
 			defer func() {
 				if t.Failed() {
@@ -509,81 +690,103 @@ type CPUHelper struct {
 }
 
 func (cpu *CPUHelper) ExpectA(want uint8) {
+	cpu.t.Helper()
 	if cpu.A != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.A)
+		cpu.t.Fatalf("A: want=%#x, got=%#x", want, cpu.A)
 	}
 }
 func (cpu *CPUHelper) ExpectB(want uint8) {
+	cpu.t.Helper()
 	if cpu.B != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.B)
+		cpu.t.Fatalf("B: want=%#x, got=%#x", want, cpu.B)
 	}
 }
 func (cpu *CPUHelper) ExpectC(want uint8) {
+	cpu.t.Helper()
 	if cpu.C != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.C)
+		cpu.t.Fatalf("C: want=%#x, got=%#x", want, cpu.C)
 	}
 }
 func (cpu *CPUHelper) ExpectD(want uint8) {
+	cpu.t.Helper()
 	if cpu.D != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.D)
+		cpu.t.Fatalf("D: want=%#x, got=%#x", want, cpu.D)
 	}
 }
 func (cpu *CPUHelper) ExpectE(want uint8) {
+	cpu.t.Helper()
 	if cpu.E != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.E)
+		cpu.t.Fatalf("E: want=%#x, got=%#x", want, cpu.E)
 	}
 }
 func (cpu *CPUHelper) ExpectH(want uint8) {
+	cpu.t.Helper()
 	if cpu.H != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.H)
+		cpu.t.Fatalf("H: want=%#x, got=%#x", want, cpu.H)
 	}
 }
 func (cpu *CPUHelper) ExpectL(want uint8) {
+	cpu.t.Helper()
 	if cpu.L != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.L)
+		cpu.t.Fatalf("L: want=%#x, got=%#x", want, cpu.L)
 	}
 }
 func (cpu *CPUHelper) ExpectPC(want uint16) {
+	cpu.t.Helper()
 	if cpu.PC != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.PC)
+		cpu.t.Fatalf("PC: want=%#x, got=%#x", want, cpu.PC)
 	}
 }
 func (cpu *CPUHelper) ExpectHL(want uint16) {
+	cpu.t.Helper()
 	if cpu.HL() != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.HL())
+		cpu.t.Fatalf("HL: want=%#x, got=%#x", want, cpu.HL())
 	}
 }
 func (cpu *CPUHelper) ExpectBC(want uint16) {
+	cpu.t.Helper()
 	if cpu.BC() != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.BC())
+		cpu.t.Fatalf("BC: want=%#x, got=%#x", want, cpu.BC())
 	}
 }
 func (cpu *CPUHelper) ExpectDE(want uint16) {
+	cpu.t.Helper()
 	if cpu.DE() != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.DE())
+		cpu.t.Fatalf("DE: want=%#x, got=%#x", want, cpu.DE())
 	}
 }
 func (cpu *CPUHelper) ExpectSP(want uint16) {
+	cpu.t.Helper()
 	if cpu.SP != want {
-		cpu.t.Fatalf("want=%#x, got=%#x", want, cpu.SP)
+		cpu.t.Fatalf("SP: want=%#x, got=%#x", want, cpu.SP)
 	}
 }
 func (cpu *CPUHelper) ExpectFlagCarry() {
+	cpu.t.Helper()
 	if !cpu.F.HasCarry() {
 		cpu.t.Fatalf("expected carry flag to be set, but it's not")
 	}
 }
 func (cpu *CPUHelper) ExpectFlagCarryUnset() {
+	cpu.t.Helper()
 	if cpu.F.HasCarry() {
 		cpu.t.Fatalf("carry flag is set, expected unset")
 	}
 }
 func (cpu *CPUHelper) ExpectFlagZero() {
+	cpu.t.Helper()
 	if !cpu.F.HasZero() {
 		cpu.t.Fatalf("expected zero flag to be set, but it's not")
 	}
 }
+func (cpu *CPUHelper) ExpectFlagZeroUnset() {
+	cpu.t.Helper()
+	if cpu.F.HasZero() {
+		cpu.t.Fatalf("zero flag is set, expected unset")
+	}
+}
 func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
+	cpu.t.Helper()
 	got, ok := cpu.mem.Access(offset)
 	if !ok {
 		cpu.t.Fatalf("illegal offset %d", offset)
@@ -629,5 +832,14 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 func (cpu *CPUHelper) ExpectCycleCount(want int) {
 	if cpu.cycles != want {
 		cpu.t.Fatalf("want=%d, got=%d", want, cpu.cycles)
+	}
+}
+func (cpu *CPUHelper) ExpectErr(t *testing.T, want error) {
+	t.Helper()
+	if cpu.err == nil {
+		t.Fatalf("expected error %v, got nil", want)
+	}
+	if !errors.Is(cpu.err, want) {
+		t.Fatalf("expected error %v, got %v", want, cpu.err)
 	}
 }

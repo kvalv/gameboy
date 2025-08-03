@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 // generates the code that fetches a value as an expression,
@@ -34,6 +36,14 @@ func get(name string, immediate bool) string {
 		// e8: signed 8-bit data
 		return "cpu.readI8(cpu.PC)"
 	}
+	if strings.HasPrefix(name, "$") {
+		n, err := strconv.ParseInt(name[1:], 16, 8)
+		if err != nil {
+			return fmt.Sprintf("// TODO: parse %s", name)
+		}
+		return fmt.Sprintf("uint8(%#x)", n)
+	}
+
 	return fmt.Sprintf("// TODO - get not implemented %s", name)
 }
 
@@ -52,6 +62,8 @@ func set(name string, immediate bool, varname string) string {
 		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", msb, lsb, varname)
 	case "AF":
 		return fmt.Sprintf("msb, lsb := split(%s)\ncpu.A, cpu.F = msb, FlagRegister(lsb)", varname)
+	case "PC":
+		return fmt.Sprintf("cpu.PC = %s", varname)
 	default:
 		return fmt.Sprintf("// todo: set %s %s", name, varname)
 	}
@@ -70,4 +82,14 @@ func cond(pred string) string {
 	default:
 		return "true"
 	}
+}
+
+// retrieves value from an array. If index is too large, fetch the last entry.
+// This is primarily related to cycles, where the cycle count may differ based
+// on a condition.
+func indexOrLast[T any](arr []T, i int) T {
+	if i < len(arr) {
+		return arr[i]
+	}
+	return arr[len(arr)-1]
 }

@@ -47,10 +47,18 @@ func (m *Memory) Write(elems ...any) *Memory {
 		case int:
 			m.data[m.i] = uint8(v)
 			m.i++
+		case string:
+			// treat as code..
+			m.data[m.i] = code(v)
+			m.i++
 		default:
 			panic(fmt.Sprintf("not implemented for %T", v))
 		}
 	}
+	return m
+}
+func (m *Memory) CursorAt(p int) *Memory {
+	m.i = p
 	return m
 }
 

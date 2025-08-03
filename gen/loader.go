@@ -74,7 +74,12 @@ func (o Operand) String() string {
 
 type Operands []Operand
 
-func (ops Operands) First() Operand  { return ops[0] }
+func (ops Operands) First() Operand {
+	if len(ops) == 0 {
+		return Operand{}
+	}
+	return ops[0]
+}
 func (ops Operands) Second() Operand { return ops[1] }
 
 type Opcode struct {
@@ -89,6 +94,16 @@ type Opcode struct {
 }
 
 func (o Opcode) String() string {
+	if o.Mnemonic == "STOP" {
+		return "STOP"
+	}
+	var parts []string
+	for _, arg := range o.Operands {
+		parts = append(parts, arg.String())
+	}
+	return strings.TrimSpace(fmt.Sprintf("%s %s", o.Mnemonic, strings.Join(parts, ",")))
+}
+func (o Opcode) Desc() string {
 	var parts []string
 	for _, arg := range o.Operands {
 		parts = append(parts, arg.String())

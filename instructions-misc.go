@@ -13,10 +13,3 @@ func NOP_01(cpu *CPU) {
 func RRCA_0F(cpu *CPU) {
 	panic("TODO")
 }
-
-// STOP    code=0x10
-func STOP_10(cpu *CPU) {
-	// this is really documented "TODO" so I don't know what heppens here..
-	cpu.err = ErrNoMoreInstructions
-	cpu.cycles += 4
-}

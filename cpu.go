@@ -139,9 +139,19 @@ func (cpu *CPU) PushStack(value any) {
 	default:
 		panic(fmt.Sprintf("cpu.PushStack: not implemented for %T", value))
 	}
+	cpu.log.Debug("Stack after push", "SP", hexstr(cpu.SP))
 }
 func (cpu *CPU) PopStack() uint16 {
-	return 0xFFFF
+	cpu.log.Debug("Popping stack", "SP", hexstr(cpu.SP))
+	if cpu.SP == 0xFFFF {
+		cpu.err = ErrStackUnderflow
+		return 0
+	}
+	lsb := cpu.readU8(cpu.SP)
+	cpu.SP++
+	msb := cpu.readU8(cpu.SP)
+	cpu.SP++
+	return concatU16(msb, lsb)
 }
 
 func (cpu *CPU) Step() bool {
@@ -168,7 +178,7 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 	op, ok := ops[instr]
-	log.Debug("instruction start")
+	log.Debug("instruction start", "name", name(instr))
 	if !ok {
 		cpu.err = fmt.Errorf("unknown code: %#x", instr)
 		return false

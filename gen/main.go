@@ -43,7 +43,7 @@ func generateInstructions(file string) error {
 		return err
 	}
 	defer f.Close()
-	main = omit(main, "STOP", "RRCA")
+	main = omit(main, "RRCA")
 
 	if err := tmpl.Execute(f, main); err != nil {
 		return fmt.Errorf("failed to generate code: %w", err)
@@ -53,13 +53,16 @@ func generateInstructions(file string) error {
 }
 
 var tmpl = template.Must(template.New("main").Parse(`package gameboy
+import "fmt"
 type Instruction func(cpu *CPU)
 
 {{ range . }}
-// {{.String}}
+// {{.Desc}}
 func {{.ID}}(cpu *CPU) {
 	{{- if eq "ADD" .Mnemonic -}} 
 		{{template "add" .DataAdd -}}
+	{{- else if eq "SUB" .Mnemonic -}}
+		{{ template "sub" .DataSub -}}
 	{{- else if eq "INC" .Mnemonic -}}
 		{{ template "inc" .DataInc -}}
 	{{- else if eq "DEC" .Mnemonic -}}
@@ -72,8 +75,22 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "push" .DataPush -}}
 	{{- else if eq "POP" .Mnemonic -}}
 		{{ template "pop" .DataPop -}}
+	{{- else if eq "RET" .Mnemonic -}}
+		{{ template "ret" .DataRet -}}
+	{{- else if eq "STOP" .Mnemonic -}}
+		{{ template "stop" .DataStop -}}
+	{{- else if eq "RST" .Mnemonic -}}
+		{{ template "rst" .DataRst -}}
+	{{- else if eq "OR" .Mnemonic -}}
+		{{ template "or" .DataOr -}}
+	{{- else if eq "XOR" .Mnemonic -}}
+		{{ template "xor" .DataXor -}}
+	{{- else if eq "CP" .Mnemonic -}}
+		{{ template "cp" .DataCp -}}
+	{{- else if eq "ILLEGAL" .Mnemonic -}}
+		{{ template "illegal" .DataIllegal -}}
 	{{else}}
-		// TODO: {{.ID}}
+		panic("TODO {{.ID}}")
 	{{end -}}
 }
 {{end}}
@@ -83,6 +100,24 @@ var ops = map[uint8]Instruction{
 	{{printf "%#x" .Code}}: {{.ID}},
 	{{end}}
 }
+// returns code given a string. Useful during testing
+func code(s string) uint8 {
+	switch s {
+	{{ range . -}}
+	case "{{.String}}": return {{printf "%#X" .Code}}
+	{{end}}
+	default: panic(fmt.Sprintf("Unknown code for %q", s))
+	}
+}
+func name(code uint8) string {
+	switch code {
+	{{range . -}}
+	case {{.Code}}: return "{{.String}}"
+	{{end}}
+	default: panic(fmt.Sprintf("Unknown code for %d", code))
+	}
+}
+
 `))
 
 // formats file. The generated file may look crap, so we pass it to gofmt to make

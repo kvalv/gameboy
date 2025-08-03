@@ -13,7 +13,6 @@ rhs := {{get .Rhs .RhsImmediate}}
 res, flags := add(lhs, rhs)
 {{set .Dst true "res"}}
 cpu.F = flags
-cpu.IncProgramCounter("add")
 cpu.cycles += {{.CycleCount}}
 `))
 
