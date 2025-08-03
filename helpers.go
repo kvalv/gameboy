@@ -1,5 +1,7 @@
 package gameboy
 
+import "fmt"
+
 // for the lack of a better name...
 type TwoBytes interface {
 	uint16 | int16
@@ -55,4 +57,8 @@ func add[L uint8 | uint16, R int | uint8 | uint16 | int8](lhs L, rhs R) (L, Flag
 		fl |= FLAGZ
 	}
 	return out, FlagRegister(fl)
+}
+
+func hexstr[V uint8 | uint16 | int | int8](v V) string {
+	return fmt.Sprintf("%#x", v)
 }

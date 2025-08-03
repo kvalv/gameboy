@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"text/template"
 )
 
@@ -23,6 +24,17 @@ func main() {
 	fmt.Printf("Code generated\n")
 }
 
+func omit(input []Opcode, skip ...string) []Opcode {
+	var res []Opcode
+	for _, inp := range input {
+		if !slices.Contains(skip, inp.Mnemonic) {
+			res = append(res, inp)
+		}
+	}
+	return res
+
+}
+
 // Reads from Opcodes.json and generates code that gets written to file.
 func generateInstructions(file string) error {
 	main, _, err := loadOpcodes("gen/Opcodes.json")
@@ -31,6 +43,7 @@ func generateInstructions(file string) error {
 		return err
 	}
 	defer f.Close()
+	main = omit(main, "STOP", "RRCA")
 
 	if err := tmpl.Execute(f, main); err != nil {
 		return fmt.Errorf("failed to generate code: %w", err)
@@ -53,6 +66,8 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "dec" .DataDec }}
 	{{ else if eq "LD" .Mnemonic }}
 		{{ template "ld" .DataLd }}
+	{{ else if eq "CALL" .Mnemonic }}
+		{{ template "call" .DataCall }}
 	{{else}}
 		// TODO: {{.ID}}
 	{{end}}

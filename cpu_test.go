@@ -3,6 +3,7 @@ package gameboy
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -126,13 +127,84 @@ func TestInstructions(t *testing.T) {
 			},
 		},
 		{
-			desc: "INC SP",
-			cpu:  CPU{SP: 0x0011},
+			desc: "INC BC 0x03",
+			cpu: CPU{
+				B: 0xFF,
+				C: 0xFF,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x03, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectBC(0x00)
+				cpu.ExpectFlagCarry()
+				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "INC B 0x04",
+			cpu: CPU{
+				B: 0x11,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x04, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectB(0x12)
+			},
+		},
+		{
+			desc: "DEC B 0x05",
+			cpu: CPU{
+				B: 0x00,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x05, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectB(0xFF)
+				cpu.ExpectFlagCarry()
+			},
+		},
+		{
+			desc: "INC SP 0x33",
+			cpu: CPU{
+				SP: 0x0011,
+			},
 			initMem: func(m *Memory) {
 				m.WriteInstr(0x33)
 				m.WriteInstr(INSTR_STOP)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) { cpu.ExpectSP(0x0012) },
+		},
+		{
+			desc: "INC (HL) 0x34",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x34)
+				m.WriteByteAt(0x1122, 0x33)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0x34)
+			},
+		},
+		{
+			desc: "DEC (HL) 0x35",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x35)
+				m.WriteByteAt(0x1122, 0x00)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0xFF)
+				cpu.ExpectFlagCarry()
+			},
 		},
 		{
 			desc: "DEC HL",
@@ -172,7 +244,6 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x08, 0x11, 0x22, INSTR_STOP)
-				m.Reserve(0x1123) // lsb is at 0x1122, msb is one more byte after
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x44) // lsb
@@ -303,14 +374,56 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectSP(0x1122)
 			},
 		},
+		{
+			desc: "CALL NZ,a16 0xC4",
+			cpu: CPU{
+				F: 0x00,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0xC4, 0x22, 0x11) // stored as lsb, msb -- so bits reversed
+				m.WriteByteAt(0x1122, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPC(0x1123) // 0x1122 + 1, since we're reading another instruction before stopping
+				cpu.ExpectSP(0xFFFD)
+
+				// read instr   1
+				// read a16     2
+				// 3 instructions done, so the NEXT is at 0x03
+				cpu.ExpectPeekStack(uint16(0x03))
+			},
+		},
+		{
+			desc: "CALL NZ,a16 0xC4 - flag zero",
+			cpu: CPU{
+				F: FlagRegister(FLAGZ),
+			},
+			initMem: func(m *Memory) {
+				m.Write(0xC4, 0x22, 0x11) // stored as lsb, msb -- so bits reversed
+				m.WriteByteAt(0x1122, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				// instr + a16 + stop
+				// 1     + 2   + 1
+				// -> 4 instructions ran, so the next is at 0x04
+				cpu.ExpectPC(0x04)
+			},
+		},
+	}
+
+	initCPU := func(cpu *CPU) {
+		if cpu.SP == 0 {
+			cpu.SP = 0xffff
+		}
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cpu := &tc.cpu
-			var mem Memory
-			tc.initMem(&mem)
-			if err := Run(cpu, &mem, logger(tc.debug)); err != nil && !errors.Is(err, ErrNoMoreInstructions) {
+			initCPU(cpu)
+			mem := NewMemory()
+			tc.initMem(mem)
+			if err := Run(cpu, mem, logger(tc.debug)); err != nil && !errors.Is(err, ErrNoMoreInstructions) {
 				fmt.Println("")
 				t.Fatalf("failed to run: %v", err)
 			}
@@ -434,4 +547,38 @@ func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
 	if got != want {
 		cpu.t.Fatalf("ExpectByte: want=%#x, got=%#x", want, got)
 	}
+}
+func (cpu *CPUHelper) ExpectPeekStack(want any) {
+	t := cpu.t
+	// in other words: MSB is the HIGH address, LSB is the LOW address
+	msb, ok := cpu.mem.Access(cpu.SP + 1)
+	if !ok {
+		t.Fatalf("failed to read msb at %#v", cpu.SP)
+	}
+	lsb, ok := cpu.mem.Access(cpu.SP)
+	if !ok {
+		t.Fatalf("failed to read lsb at %#v", cpu.SP+1)
+	}
+	switch want := want.(type) {
+	case uint16:
+		got := concatU16(msb, lsb)
+		if got != want {
+			t.Fatalf("ExpectPeekStack: want=%#v, got=%#v", want, got)
+		}
+	default:
+		t.Fatalf("ExpectPeekStack: not implemented for %T", want)
+	}
+}
+func (cpu *CPUHelper) DumpStack(w io.Writer) {
+	t := cpu.t
+	t.Helper()
+	fmt.Fprintln(w, "=== Dumping stack:")
+	for i := uint16(0xffff); i >= cpu.SP; i-- {
+		b, ok := cpu.mem.Access(i)
+		if !ok {
+			t.Fatalf("failed to read stack at %#x", i)
+		}
+		fmt.Fprintf(w, "  %#04X: %02x\n", i, b)
+	}
+	fmt.Fprintln(w, "=== End of stack dump")
 }

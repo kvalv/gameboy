@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -26,44 +25,21 @@ func loadOpcodes(file string) (main, extended []Opcode, err error) {
 		return
 	}
 
-	keep := []string{
-		"ADD",
-		"INC",
-		"DEC",
-		"LD",
-	}
-
 	for code, v := range data.Unprefixed {
-		if !slices.Contains(keep, v.Mnemonic) {
-			delete(data.Unprefixed, code)
-			continue
-		}
 		v.ID = fmt.Sprintf("%s_%s", v.Mnemonic, code[2:])
 		i64, _ := strconv.ParseInt(code, 0, 64)
 		v.Code = int(i64)
 
 		data.Unprefixed[code] = v
-		if len(v.Cycles) > 1 {
-			fmt.Printf("op %s has %d cycles\n", code, len(v.Cycles))
-		}
 	}
 
-	for k, v := range data.Prefixed {
-		if len(v.Cycles) > 1 {
-			fmt.Printf("prefixed op %s has %d cycles\n", k, len(v.Cycles))
-		}
-	}
 	data.Prefixed = map[string]Opcode{}
 
 	for _, v := range data.Unprefixed {
-		if slices.Contains(keep, v.Mnemonic) {
-			main = append(main, v)
-		}
+		main = append(main, v)
 	}
 	for _, v := range data.Prefixed {
-		if slices.Contains(keep, v.Mnemonic) {
-			extended = append(extended, v)
-		}
+		extended = append(extended, v)
 	}
 
 	return main, extended, nil

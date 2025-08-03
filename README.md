@@ -16,6 +16,16 @@ References:
 - https://retrocomputing.stackexchange.com/questions/11732/how-does-the-gameboys-memory-bank-switching-work
 - 
 
+# (Function) calls
+Return addresses are pushed to stack using `CALL` and popped using `RET`. The stack
+moves downwards, so SP starts at 0xFFFF. When writing an u16 to the stack, the
+MSB is at the highest address (i.e. closer to 0xFFFF) and the LSB is at the lowest address.
+
+Function call = push current PC to the stack, then move
+PC to the another address. When the call returns, pop from stack
+to retrieve previous location.
+
+
 # Display
 Screen view 160x144 px
 Tile view is larger than screen view, so the developer must choose the section to display, using `SCY` and `SCX` "registers", located at 0xFF42, 0xFF43

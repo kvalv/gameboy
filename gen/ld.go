@@ -13,6 +13,7 @@ var templLd = template.Must(tmpl.New("ld").
 	res, flags := add({{get "SP" true}}, e)
 	{{set "HL" true "res"}}
 	cpu.F = flags
+	cpu.IncProgramCounter()
 {{else}}
 	data := {{get .Src .SrcImmediate}}
 	
@@ -29,6 +30,7 @@ var templLd = template.Must(tmpl.New("ld").
 	{{set .Dst true "decr"}}
 	cpu.F = flags
 	{{end}}
+	cpu.IncProgramCounter()
 
 {{end}}
 `))

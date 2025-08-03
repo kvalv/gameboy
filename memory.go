@@ -7,7 +7,16 @@ import (
 )
 
 type Memory struct {
+	i    int
 	data []byte
+}
+
+func NewMemory() *Memory {
+	kB := 1024
+	return &Memory{
+		data: make([]byte, 64*kB),
+	}
+
 }
 
 func (m *Memory) Size() int {
@@ -22,18 +31,22 @@ func (m *Memory) Access(p uint16) (byte, bool) {
 }
 
 func (m *Memory) WriteInstr(v uint8) *Memory {
-	m.data = append(m.data, v)
-	return m
+	return m.Write(v)
 }
 func (m *Memory) Write(elems ...any) *Memory {
 	for _, v := range elems {
 		switch v := v.(type) {
 		case []byte:
-			m.data = append(m.data, v...)
+			for _, b := range v {
+				m.data[m.i] = b
+				m.i++
+			}
 		case uint8:
-			m.data = append(m.data, v)
+			m.data[m.i] = v
+			m.i++
 		case int:
-			m.data = append(m.data, uint8(v))
+			m.data[m.i] = uint8(v)
+			m.i++
 		default:
 			panic(fmt.Sprintf("not implemented for %T", v))
 		}
@@ -44,15 +57,9 @@ func (m *Memory) Write(elems ...any) *Memory {
 func (m *Memory) WriteByteAt(off uint16, value byte) *Memory {
 	return m.WriteData(off, []byte{value})
 }
-func (m *Memory) Reserve(size uint16) *Memory {
-	m.WriteByteAt(size, 0x00)
-	return m
-}
 func (m *Memory) WriteData(off uint16, p []byte) *Memory {
 	if len(m.data) < int(off)+len(p) {
-		newData := make([]byte, off+uint16(len(p)))
-		copy(newData, m.data)
-		m.data = newData
+		panic("Outside bound")
 	}
 	for i := range len(p) {
 		m.data[int(off)+i] = p[i]

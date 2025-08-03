@@ -49,8 +49,11 @@ type CPU struct {
 	H Register
 	L Register
 
+	// Points to next instruction to run
 	PC uint16
-	SP uint16 // stack pointer
+	// Points to the bottom of the stack (NOT the next free value - if you want the
+	// next free value, then need to decrement first)
+	SP uint16
 
 	cycles int
 
@@ -72,7 +75,7 @@ func (cpu *CPU) DE() uint16 { return concatU16(cpu.D, cpu.E) }
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
 	b, ok := cpu.mem.Access(addr)
-	cpu.log.Debug("Accessing memory", "loc", addr, "res", fmt.Sprintf("%#x", b))
+	cpu.log.Debug("Accessing memory", "loc", hexstr(addr), "res", hexstr(b))
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
@@ -109,6 +112,7 @@ func (cpu *CPU) readI8(addr uint16) int8 {
 	return int8(value)
 }
 
+// Writing to stack: use PushStack instead of this.
 func (cpu *CPU) WriteMemory(addr uint16, value any) {
 	if cpu.mem == nil {
 		panic("cpu.mem is nil")
@@ -122,6 +126,20 @@ func (cpu *CPU) WriteMemory(addr uint16, value any) {
 	}
 }
 
+func (cpu *CPU) PushStack(value any) {
+	cpu.log.Debug("Writing to stack", "SP", hexstr(cpu.SP), "value", value)
+	switch value := value.(type) {
+	case uint16:
+		msb, lsb := split(value)
+		cpu.SP--
+		cpu.WriteMemory(cpu.SP, msb)
+		cpu.SP--
+		cpu.WriteMemory(cpu.SP, lsb)
+	default:
+		panic(fmt.Sprintf("cpu.PushStack: not implemented for %T", value))
+	}
+}
+
 func (cpu *CPU) Step() bool {
 	if cpu.err != nil {
 		return false
@@ -132,13 +150,14 @@ func (cpu *CPU) Step() bool {
 	if cpu.err != nil { // if loading next instruction failed, we'll stop
 		return false
 	}
-	log := cpu.log.With("PC", cpu.PC, "instr", fmt.Sprintf("%#x", instr))
+	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(instr))
 	// TODO: handle prefix...
 	if instr == 0xCB {
 		panic("TODO: handle prefix")
 	}
 	if instr == 0x00 {
-		return true // NOP command
+		cpu.err = ErrNoMoreInstructions
+		return false // NOP command
 	}
 	if instr == 0x10 {
 		cpu.err = ErrNoMoreInstructions
@@ -158,14 +177,16 @@ func (cpu *CPU) Step() bool {
 	// PC towards the last instruction that is done by the op.
 
 	op(cpu) // execute the operation
-	log.Debug("instruction done", "curr", cpu.PC)
+	log.Debug("instruction done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
 	return true
 }
 
 func (cpu *CPU) IncProgramCounter() {
 	cpu.PC++
-	cpu.log.Debug("PC increment", "new", cpu.PC)
+	if cpu.log != nil {
+		cpu.log.Debug("PC increment", "new", fmt.Sprintf("%#x", cpu.PC))
+	}
 }
 
 func (cpu *CPU) Dump(w io.Writer) {
@@ -188,7 +209,6 @@ func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.log = log
 
 	for cpu.Step() {
-		cpu.IncProgramCounter()
 	}
 	return cpu.Err()
 }

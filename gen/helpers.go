@@ -54,3 +54,18 @@ func set(name string, immediate bool, varname string) string {
 		return fmt.Sprintf("// todo: set %s %s", name, varname)
 	}
 }
+
+func cond(pred string) string {
+	switch pred {
+	case "NZ":
+		return "!cpu.F.HasZero()"
+	case "Z":
+		return "cpu.F.HasZero()"
+	case "NC":
+		return "!cpu.F.HasCarry()"
+	case "C":
+		return "cpu.F.HasCarry()"
+	default:
+		return "true"
+	}
+}
