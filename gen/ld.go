@@ -14,6 +14,7 @@ var templLd = template.Must(tmpl.New("ld").
 	{{set "HL" true "res"}}
 	cpu.F = flags
 	cpu.IncProgramCounter()
+	cpu.cycles += {{.CycleCount}}
 {{else}}
 	data := {{get .Src .SrcImmediate}}
 	
@@ -30,8 +31,9 @@ var templLd = template.Must(tmpl.New("ld").
 	{{set .Dst true "decr"}}
 	cpu.F = flags
 	{{end}}
-	cpu.IncProgramCounter()
 
+	cpu.IncProgramCounter()
+	cpu.cycles += {{.CycleCount}}
 {{end}}
 `))
 
@@ -43,6 +45,7 @@ type templDataLd struct {
 	Code          uint8  // for the 0xF8 instruction, we'll just hardcode it, it's way too complicated
 	PostIncrement bool
 	PostDecrement bool
+	CycleCount    int // number of cycles for this instruction
 }
 
 func (o Opcode) DataLd() templDataLd {
@@ -54,5 +57,6 @@ func (o Opcode) DataLd() templDataLd {
 		Code:          uint8(o.Code),
 		PostIncrement: o.Operands.First().Increment,
 		PostDecrement: o.Operands.First().Decrement,
+		CycleCount:    o.CycleCount(),
 	}
 }

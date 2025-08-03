@@ -391,6 +391,7 @@ func TestInstructions(t *testing.T) {
 				// read a16     2
 				// 3 instructions done, so the NEXT is at 0x03
 				cpu.ExpectPeekStack(uint16(0x03))
+				cpu.ExpectCycleCount(24)
 			},
 		},
 		{
@@ -407,6 +408,19 @@ func TestInstructions(t *testing.T) {
 				// 1     + 2   + 1
 				// -> 4 instructions ran, so the next is at 0x04
 				cpu.ExpectPC(0x04)
+				cpu.ExpectCycleCount(12)
+			},
+		},
+		{
+			desc: "CALL 0xCD",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write(0xCD, 0x22, 0x11)
+				m.WriteByteAt(0x1122, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPC(0x1123)
+				cpu.ExpectCycleCount(24)
 			},
 		},
 	}
@@ -581,4 +595,9 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 		fmt.Fprintf(w, "  %#04X: %02x\n", i, b)
 	}
 	fmt.Fprintln(w, "=== End of stack dump")
+}
+func (cpu *CPUHelper) ExpectCycleCount(want int) {
+	if cpu.cycles != want {
+		cpu.t.Fatalf("want=%d, got=%d", want, cpu.cycles)
+	}
 }

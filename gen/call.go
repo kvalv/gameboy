@@ -11,14 +11,16 @@ var templCall = template.Must(tmpl.New("call").
 		"cond": cond,
 	}).
 	Parse(`
-	// TODO: machine cycles are different depending on condition is called or not
 lsb := cpu.readU8(cpu.PC)
 msb := cpu.readU8(cpu.PC)
 nn := concatU16(msb, lsb)
 if {{cond .Predicate }} {
 	cpu.PushStack(cpu.PC)
 	cpu.PC = nn
-} 
+	cpu.cycles += 24
+}  else {
+	cpu.cycles += 12
+}
 `))
 
 type templDataCall struct {

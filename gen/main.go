@@ -58,20 +58,19 @@ type Instruction func(cpu *CPU)
 {{ range . }}
 // {{.String}}
 func {{.ID}}(cpu *CPU) {
-	{{ if eq "ADD" .Mnemonic }} 
-		{{ template "add" .DataAdd }}
-	{{ else if eq "INC" .Mnemonic }}
-		{{ template "inc" .DataInc }}
-	{{ else if eq "DEC" .Mnemonic }}
-		{{ template "dec" .DataDec }}
-	{{ else if eq "LD" .Mnemonic }}
-		{{ template "ld" .DataLd }}
-	{{ else if eq "CALL" .Mnemonic }}
-		{{ template "call" .DataCall }}
+	{{- if eq "ADD" .Mnemonic -}} 
+		{{template "add" .DataAdd -}}
+	{{- else if eq "INC" .Mnemonic -}}
+		{{ template "inc" .DataInc -}}
+	{{- else if eq "DEC" .Mnemonic -}}
+		{{ template "dec" .DataDec -}}
+	{{- else if eq "LD" .Mnemonic -}}
+		{{ template "ld" .DataLd -}}
+	{{- else if eq "CALL" .Mnemonic -}}
+		{{ template "call" .DataCall -}}
 	{{else}}
 		// TODO: {{.ID}}
-	{{end}}
-	cpu.cycles += {{.CycleCount}}
+	{{end -}}
 }
 {{end}}
 

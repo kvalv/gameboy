@@ -14,12 +14,14 @@ res, flags := add(lhs, rhs)
 {{set .Dst true "res"}}
 cpu.F = flags
 cpu.IncProgramCounter()
+cpu.cycles += {{.CycleCount}}
 `))
 
 type templDataAdd struct {
 	Dst          string
 	Rhs          string
 	RhsImmediate bool
+	CycleCount   int // number of cycles for this instruction
 }
 
 func (o Opcode) DataAdd() templDataAdd {
@@ -27,5 +29,6 @@ func (o Opcode) DataAdd() templDataAdd {
 		Dst:          o.Operands.First().Name,
 		Rhs:          o.Operands.Second().Name,
 		RhsImmediate: o.Operands.Second().Immediate,
+		CycleCount:   o.CycleCount(),
 	}
 }
