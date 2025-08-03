@@ -423,11 +423,41 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectCycleCount(24)
 			},
 		},
+		{
+			desc: "PUSH BC 0xC5",
+			cpu: CPU{
+				B: 0x11,
+				C: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0xC5, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPeekStack(uint16(0x1122)) // 0x22
+			},
+		},
+		{
+			desc: "POP BC 0xC1",
+			cpu: CPU{
+				D: 0x11,
+				E: 0x22,
+			},
+			debug: true,
+			initMem: func(m *Memory) {
+				m.Write(0xD5) // PUSH DE
+				m.Write(0xC1) // POP BC
+				m.Write(INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.DumpStack(os.Stderr)
+				cpu.ExpectBC(0x1122)
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
 		if cpu.SP == 0 {
-			cpu.SP = 0xffff
+			// cpu.SP = 0xffff
 		}
 	}
 

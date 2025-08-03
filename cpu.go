@@ -71,6 +71,7 @@ func (cpu *CPU) Err() error {
 func (cpu *CPU) HL() uint16 { return concatU16(cpu.H, cpu.L) }
 func (cpu *CPU) BC() uint16 { return concatU16(cpu.B, cpu.C) }
 func (cpu *CPU) DE() uint16 { return concatU16(cpu.D, cpu.E) }
+func (cpu *CPU) AF() uint16 { return concatU16(cpu.A, Register(cpu.F)) }
 
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
@@ -139,6 +140,9 @@ func (cpu *CPU) PushStack(value any) {
 		panic(fmt.Sprintf("cpu.PushStack: not implemented for %T", value))
 	}
 }
+func (cpu *CPU) PopStack() uint16 {
+	return 0xFFFF
+}
 
 func (cpu *CPU) Step() bool {
 	if cpu.err != nil {
@@ -182,21 +186,26 @@ func (cpu *CPU) Step() bool {
 	return true
 }
 
-func (cpu *CPU) IncProgramCounter() {
+func (cpu *CPU) IncProgramCounter(src ...string) {
 	cpu.PC++
 	if cpu.log != nil {
-		cpu.log.Debug("PC increment", "new", fmt.Sprintf("%#x", cpu.PC))
+		s := "N/A"
+		if len(src) > 0 {
+			s = src[0]
+		}
+		cpu.log.Debug("PC increment", "new", fmt.Sprintf("%#x", cpu.PC), "src", s)
 	}
 }
 
 func (cpu *CPU) Dump(w io.Writer) {
-	fmt.Fprintf(w, "A:  %#02x     F:  %#02x\n", cpu.A, uint8(cpu.F))
-	fmt.Fprintf(w, "B:  %#02x     C:  %#02x\n", cpu.B, cpu.C)
-	fmt.Fprintf(w, "D:  %#02x     E:  %#02x\n", cpu.D, cpu.E)
-	fmt.Fprintf(w, "H:  %#02x     L:  %#02x\n", cpu.H, cpu.L)
-	fmt.Fprintf(w, "PC: %#04x   SP: %#04x\n", cpu.PC, cpu.SP)
 	fmt.Fprintf(w, "Cycles: %d\n", cpu.cycles)
-	fmt.Fprintf(w, "HL: %#04x   BC: %#04x   DE: %#04x\n", cpu.HL(), cpu.BC(), cpu.DE())
+	fmt.Fprintf(w, "A:  %#02x     F:  %#02x     AF: %#04x\n", cpu.A, uint8(cpu.F), cpu.AF())
+	fmt.Fprintf(w, "B:  %#02x     C:  %#02x     BC: %#04x\n", cpu.B, cpu.C, cpu.BC())
+	fmt.Fprintf(w, "D:  %#02x     E:  %#02x	  DE: %#04x\n", cpu.D, cpu.E, cpu.DE())
+	fmt.Fprintf(w, "H:  %#02x     L:  %#02x	  HL: %#04x\n", cpu.H, cpu.L, cpu.HL())
+	fmt.Fprintf(w, "                          SP: %#04x\n", cpu.SP)
+	fmt.Fprintf(w, "                          PC: %#04x\n", cpu.PC)
+	// fmt.Fprintf(w, "HL: %#04x   BC: %#04x   DE: %#04x   AF: %#04x\n", cpu.HL(), cpu.BC(), cpu.DE(), cpu.AF())
 }
 
 type FlagRegister Register

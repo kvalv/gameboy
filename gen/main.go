@@ -68,6 +68,10 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "ld" .DataLd -}}
 	{{- else if eq "CALL" .Mnemonic -}}
 		{{ template "call" .DataCall -}}
+	{{- else if eq "PUSH" .Mnemonic -}}
+		{{ template "push" .DataPush -}}
+	{{- else if eq "POP" .Mnemonic -}}
+		{{ template "pop" .DataPop -}}
 	{{else}}
 		// TODO: {{.ID}}
 	{{end -}}

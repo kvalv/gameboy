@@ -11,20 +11,20 @@ var templDec = template.Must(tmpl.New("dec").
 res, flags := sub({{get .Name .Immediate}}, 0x01)
 cpu.F = flags
 {{set .Name .Immediate "res"}}
-cpu.IncProgramCounter()
+cpu.IncProgramCounter("dec")
 cpu.cycles += {{.CycleCount}}
 `))
 
 type templDataDec struct {
-	Name      string // name of register for what to add
-	Immediate bool   // if not true, we require a load
+	Name       string // name of register for what to add
+	Immediate  bool   // if not true, we require a load
 	CycleCount int    // number of cycles for this instruction
 }
 
 func (o Opcode) DataDec() templDataDec {
 	return templDataDec{
-		Name:      o.Operands.First().Name,
-		Immediate: o.Operands.First().Immediate,
+		Name:       o.Operands.First().Name,
+		Immediate:  o.Operands.First().Immediate,
 		CycleCount: o.CycleCount(),
 	}
 }

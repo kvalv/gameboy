@@ -17,7 +17,7 @@ func get(name string, immediate bool) string {
 	case "PC", "SP":
 		// direct access
 		return fmt.Sprintf("cpu.%s", name)
-	case "HL", "BC", "DE":
+	case "HL", "BC", "DE", "AF":
 		// via method
 		return fmt.Sprintf("cpu.%s()", name)
 	case "n16":
@@ -50,6 +50,8 @@ func set(name string, immediate bool, varname string) string {
 		msb := string(name[0])
 		lsb := string(name[1])
 		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", msb, lsb, varname)
+	case "AF":
+		return fmt.Sprintf("msb, lsb := split(%s)\ncpu.A, cpu.F = msb, FlagRegister(lsb)", varname)
 	default:
 		return fmt.Sprintf("// todo: set %s %s", name, varname)
 	}
