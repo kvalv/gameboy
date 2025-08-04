@@ -41,6 +41,16 @@ func (m *Memory) Write(elems ...any) *Memory {
 				m.data[m.i] = b
 				m.i++
 			}
+		case []Block:
+			for _, block := range v {
+				m.Write(block)
+			}
+		case Block:
+			m.i = int(v.Offset)
+			for _, b := range v.Data {
+				m.data[m.i] = b
+				m.i++
+			}
 		case uint8:
 			m.data[m.i] = v
 			m.i++
@@ -77,4 +87,9 @@ func (m *Memory) WriteData(off uint16, p []byte) *Memory {
 
 func (m *Memory) Dump(w io.Writer) {
 	fmt.Fprintln(w, hex.Dump(m.data))
+}
+
+type Block struct {
+	Offset uint16
+	Data   []byte
 }
