@@ -37,7 +37,7 @@ func omit(input []Opcode, skip ...string) []Opcode {
 
 // Reads from Opcodes.json and generates code that gets written to file.
 func generateInstructions(file string) error {
-	main, _, err := loadOpcodes("gen/Opcodes.json")
+	main, ext, err := loadOpcodes("gen/Opcodes.json")
 	f, err := os.Create(file)
 	if err != nil {
 		return err
@@ -45,7 +45,13 @@ func generateInstructions(file string) error {
 	defer f.Close()
 	main = omit(main, "RRCA")
 
-	if err := tmpl.Execute(f, main); err != nil {
+	data := map[string][]Opcode{
+		"Main": main,
+		"Ext":  ext,
+		"Both": append(main, ext...),
+	}
+
+	if err := tmpl.Execute(f, data); err != nil {
 		return fmt.Errorf("failed to generate code: %w", err)
 	}
 
@@ -56,7 +62,7 @@ var tmpl = template.Must(template.New("main").Parse(`package gameboy
 import "fmt"
 type Instruction func(cpu *CPU)
 
-{{ range . }}
+{{ range .Both }}
 // {{.Desc}}
 func {{.ID}}(cpu *CPU) {
 	{{- if eq "ADD" .Mnemonic -}} 
@@ -69,6 +75,8 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "dec" .DataDec -}}
 	{{- else if eq "LD" .Mnemonic -}}
 		{{ template "ld" .DataLd -}}
+	{{- else if eq "LDH" .Mnemonic -}}
+		{{ template "ldh" .DataLdh -}}
 	{{- else if eq "CALL" .Mnemonic -}}
 		{{ template "call" .DataCall -}}
 	{{- else if eq "PUSH" .Mnemonic -}}
@@ -89,6 +97,13 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "cp" .DataCp -}}
 	{{- else if eq "ILLEGAL" .Mnemonic -}}
 		{{ template "illegal" .DataIllegal -}}
+	{{- else if eq "PREFIX" .Mnemonic -}}
+		{{ template "prefix" .DataPrefix -}}
+	{{- else if eq "JR" .Mnemonic -}}
+		{{ template "jr" .DataJr -}}
+	{{/* CB-prefixed stuff */}}
+	{{- else if eq "BIT" .Mnemonic -}}
+		{{ template "bit" .DataBit -}}
 	{{else}}
 		panic("TODO {{.ID}}")
 	{{end -}}
@@ -96,22 +111,35 @@ func {{.ID}}(cpu *CPU) {
 {{end}}
 
 var ops = map[uint8]Instruction{
-	{{ range . -}}
+	{{ range .Main -}}
 	{{printf "%#x" .Code}}: {{.ID}},
 	{{end}}
 }
+var extOps = map[uint8]Instruction{
+	{{ range .Ext -}}
+	{{printf "%#x" .Code}}: {{.ID}},
+	{{end}}
+}
+
 // returns code given a string. Useful during testing
 func code(s string) uint8 {
 	switch s {
-	{{ range . -}}
+	{{ range .Both -}}
 	case "{{.String}}": return {{printf "%#X" .Code}}
 	{{end}}
 	default: panic(fmt.Sprintf("Unknown code for %q", s))
 	}
 }
-func name(code uint8) string {
+func name(code uint8, prefix bool) string {
+	if prefix {
+		switch code {
+		{{range .Ext -}}
+			case {{.Code}}: return "{{.String}}"
+		{{end}}
+		}
+	}
 	switch code {
-	{{range . -}}
+	{{range .Main -}}
 	case {{.Code}}: return "{{.String}}"
 	{{end}}
 	default: panic(fmt.Sprintf("Unknown code for %d", code))

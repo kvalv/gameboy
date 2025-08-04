@@ -10,6 +10,10 @@ import (
 // e.g. `cpu.load(cpu.HL)` or `cpu.A`.
 func get(name string, immediate bool) string {
 	if !immediate {
+		switch name {
+		case "A", "F", "B", "C", "D", "E", "H", "L":
+			return fmt.Sprintf("cpu.loadU8(concatU16(0xFF, cpu.%s))", name)
+		}
 		return fmt.Sprintf("cpu.loadU8(%s)", get(name, true))
 	}
 	switch name {
@@ -31,7 +35,7 @@ func get(name string, immediate bool) string {
 		return "cpu.readU16(cpu.PC)"
 	case "a8":
 		// means 8 bit unsigned data, which are added to $FF00 in certain instructions
-		return "uint32(cpu.readU8(cpu.PC)) + 0xFF00"
+		return "concatU16(0xFF, cpu.readU8(cpu.PC))"
 	case "e8":
 		// e8: signed 8-bit data
 		return "cpu.readI8(cpu.PC)"
@@ -49,23 +53,27 @@ func get(name string, immediate bool) string {
 
 // generates the code that writes, either to a register, or to memory
 // e.g. `cpu.WriteMemory(cpu.A, data)` or `cpu.A = cpu.B`
-func set(name string, immediate bool, varname string) string {
+func set(name string, immediate bool, expr string) string {
 	if !immediate {
-		return fmt.Sprintf("cpu.WriteMemory(%s, %s)", get(name, true), varname)
+		switch name {
+		case "A", "F", "B", "C", "D", "E", "H", "L":
+			return fmt.Sprintf("cpu.WriteMemory(concatU16(0xFF, cpu.%s), %s)", name, expr)
+		}
+		return fmt.Sprintf("cpu.WriteMemory(%s, %s)", get(name, true), expr)
 	}
 	switch name {
 	case "A", "C", "E", "L", "B", "D", "H", "SP":
-		return fmt.Sprintf("cpu.%s = %s", name, varname)
+		return fmt.Sprintf("cpu.%s = %s", name, expr)
 	case "BC", "DE", "HL":
 		msb := string(name[0])
 		lsb := string(name[1])
-		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", msb, lsb, varname)
+		return fmt.Sprintf("cpu.%s, cpu.%s = split(%s)", msb, lsb, expr)
 	case "AF":
-		return fmt.Sprintf("msb, lsb := split(%s)\ncpu.A, cpu.F = msb, FlagRegister(lsb)", varname)
+		return fmt.Sprintf("msb, lsb := split(%s)\ncpu.A, cpu.F = msb, FlagRegister(lsb)", expr)
 	case "PC":
-		return fmt.Sprintf("cpu.PC = %s", varname)
+		return fmt.Sprintf("cpu.PC = %s", expr)
 	default:
-		return fmt.Sprintf("// todo: set %s %s", name, varname)
+		return fmt.Sprintf("// todo: set %s %s", name, expr)
 	}
 }
 

@@ -637,6 +637,158 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectA(0x01)
 			},
 		},
+		{
+			desc: "BIT 0,B 0x40",
+			cpu: CPU{
+				B: 0x00,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "BIT 0,B")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "BIT 0,C 0x41",
+			cpu: CPU{
+				C: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "BIT 0,C")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZeroUnset()
+			},
+		},
+		{
+			desc: "BIT 1,B 0x48",
+			cpu: CPU{
+				B: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "BIT 1,B")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "BIT 1,C 0x49",
+			cpu: CPU{
+				C: 0x02,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "BIT 1,C")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZeroUnset()
+			},
+		},
+		{
+			desc: "BIT 1,(HL) 0x4E",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "BIT 1,(HL)")
+				m.CursorAt(0x1122)
+				m.Write(0x02)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZeroUnset()
+				cpu.ExpectFlagHigh()
+			},
+		},
+		{
+			desc: "JR e8 0x18",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write("JR e8", 0x05)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPC(0x08)
+				cpu.ExpectCycleCount(12)
+			},
+		},
+		{
+			desc: "JR Z,e8 0x28",
+			cpu: CPU{
+				F: FlagRegister(FLAGZ),
+			},
+			initMem: func(m *Memory) {
+				m.Write("JR Z,e8", 0x05)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPC(0x08)
+				cpu.ExpectCycleCount(12)
+			},
+		},
+		{
+			desc: "JR NZ,e8 0x20",
+			cpu: CPU{
+				F: FlagRegister(FLAGZ),
+			},
+			initMem: func(m *Memory) {
+				m.Write("JR NZ,e8", 0x05)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectPC(0x03)
+				cpu.ExpectCycleCount(8)
+			},
+		},
+		{
+			desc: "LDH (a8),A 0xE0",
+			cpu: CPU{
+				A: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("LDH (a8),A", 0x11)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0xFF11, 0x01)
+			},
+		},
+		{
+			desc: "LDH (C),A 0xE2",
+			cpu: CPU{
+				C: 0x11,
+				A: 0x01,
+			},
+			initMem: func(m *Memory) {
+				m.Write("LDH (C),A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0xFF11, 0x01)
+			},
+		},
+		{
+			desc: "LDH A,(a8) 0xF0",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write("LDH A,(a8)", 0x11)
+				m.CursorAt(0xFF11)
+				m.Write(0x01)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x01)
+			},
+		},
+		{
+			desc: "LDH A,(C) 0xF2",
+			cpu: CPU{
+				C: 0x11,
+			},
+			initMem: func(m *Memory) {
+				m.Write("LDH A,(C)")
+				m.CursorAt(0xFF11)
+				m.Write(0x01)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x01)
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
@@ -783,6 +935,18 @@ func (cpu *CPUHelper) ExpectFlagZeroUnset() {
 	cpu.t.Helper()
 	if cpu.F.HasZero() {
 		cpu.t.Fatalf("zero flag is set, expected unset")
+	}
+}
+func (cpu *CPUHelper) ExpectFlagHighUnset() {
+	cpu.t.Helper()
+	if cpu.F.HasHigh() {
+		cpu.t.Fatalf("high flag is set, expected unset")
+	}
+}
+func (cpu *CPUHelper) ExpectFlagHigh() {
+	cpu.t.Helper()
+	if !cpu.F.HasHigh() {
+		cpu.t.Fatalf("expected high flag to be set, but it's not")
 	}
 }
 func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {

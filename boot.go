@@ -13,7 +13,13 @@ var BootCode = []Block{
 		Offset: 0x0007,
 		Data: []byte{
 			code("LD (HL-),A"), // $0007
-			// TODO: BIT 7,H ...
+			code("PREFIX"), code("BIT 7,H"),
+			code("JR NZ,e8"), 0x07,
+			code("LD HL,n16"), 0xff, 0x26, // setup audio
+			code("LD C,n8"), 0x11,
+			code("LD A,n8"), 0x80,
+			code("LD (HL-),A"),
+			code("LD C,n8"), 
 		},
 	},
 }

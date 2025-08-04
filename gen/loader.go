@@ -18,7 +18,7 @@ func loadOpcodes(file string) (main, extended []Opcode, err error) {
 
 	var data struct {
 		Unprefixed map[string]Opcode `json:"unprefixed"`
-		Prefixed   map[string]Opcode `json:"prefixed"`
+		Prefixed   map[string]Opcode `json:"cbprefixed"`
 	}
 	if err = json.Unmarshal(b, &data); err != nil {
 		err = fmt.Errorf("failed to unmarshal Opcodes.json: %w", err)
@@ -32,8 +32,15 @@ func loadOpcodes(file string) (main, extended []Opcode, err error) {
 
 		data.Unprefixed[code] = v
 	}
+	for code, v := range data.Prefixed {
+		v.ID = fmt.Sprintf("%s_%s", v.Mnemonic, code[2:])
+		i64, _ := strconv.ParseInt(code, 0, 64)
+		v.Code = int(i64)
 
-	data.Prefixed = map[string]Opcode{}
+		data.Prefixed[code] = v
+	}
+
+	// data.Prefixed = map[string]Opcode{}
 
 	for _, v := range data.Unprefixed {
 		main = append(main, v)

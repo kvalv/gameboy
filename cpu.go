@@ -55,6 +55,9 @@ type CPU struct {
 	// next free value, then need to decrement first)
 	SP uint16
 
+	// whether previous command was the CB-prefix
+	prefix bool
+
 	cycles int
 
 	mem *Memory
@@ -76,7 +79,7 @@ func (cpu *CPU) AF() uint16 { return concatU16(cpu.A, Register(cpu.F)) }
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
 	b, ok := cpu.mem.Access(addr)
-	cpu.log.Debug("Accessing memory", "loc", hexstr(addr), "res", hexstr(b))
+	// cpu.log.Debug("Accessing memory", "loc", hexstr(addr), "res", hexstr(b))
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
@@ -158,29 +161,36 @@ func (cpu *CPU) Step() bool {
 	if cpu.err != nil {
 		return false
 	}
-
-	var instr uint8
-	cpu.load(cpu.PC, &instr)
+	code := cpu.loadU8(cpu.PC)
 	if cpu.err != nil { // if loading next instruction failed, we'll stop
 		return false
 	}
-	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(instr))
-	// TODO: handle prefix...
-	if instr == 0xCB {
-		panic("TODO: handle prefix")
-	}
-	if instr == 0x00 {
+
+	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(code), "prefix", cpu.prefix)
+	if code == 0x00 {
 		cpu.err = ErrNoMoreInstructions
 		return false // NOP command
 	}
-	if instr == 0x10 {
+	if code == 0x10 {
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}
-	op, ok := ops[instr]
-	log.Debug("instruction start", "name", name(instr))
+
+	log.Debug("instruction start", "name", name(code, cpu.prefix))
+
+	var (
+		instr Instruction
+		ok    bool
+	)
+	if cpu.prefix {
+		instr, ok = extOps[code]
+		cpu.prefix = false
+	} else {
+		instr, ok = ops[code]
+	}
+
 	if !ok {
-		cpu.err = fmt.Errorf("unknown code: %#x", instr)
+		cpu.err = fmt.Errorf("unknown code: %#x", code)
 		return false
 	}
 
@@ -190,7 +200,7 @@ func (cpu *CPU) Step() bool {
 	// by op. However, for instructions that load data, the op should move the
 	// PC towards the last instruction that is done by the op.
 
-	op(cpu) // execute the operation
+	instr(cpu) // execute the operation
 	log.Debug("instruction done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
 	return true
@@ -222,6 +232,7 @@ type FlagRegister Register
 
 func (f FlagRegister) HasCarry() bool { return (uint8(f) & uint8(FLAGC)) > 0 }
 func (f FlagRegister) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
+func (f FlagRegister) HasHigh() bool  { return (uint8(f) & uint8(FLAGH)) > 0 }
 
 func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.mem = mem
