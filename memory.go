@@ -89,6 +89,22 @@ func (m *Memory) Dump(w io.Writer) {
 	fmt.Fprintln(w, hex.Dump(m.data))
 }
 
+type VRAM struct {
+	TileData1 []byte // 4kB: 2kB unique, 2kB overlap with TileData2
+	TileData2 []byte // 4kB: 2kB overlap with TileData1 and 2kB unique
+	TileView1 []byte // 1kB
+	TileView2 []byte // 1kB
+}
+
+func (m *Memory) VRAM() VRAM {
+	return VRAM{
+		TileData1: m.data[0x8000:0x9000],
+		TileData2: m.data[0x8800:0x9800],
+		TileView1: m.data[0x9800:0x9c00],
+		TileView2: m.data[0x9c00:0xa000],
+	}
+}
+
 type Block struct {
 	Offset uint16
 	Data   []byte

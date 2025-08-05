@@ -59,6 +59,57 @@ func add[L uint8 | uint16, R int | uint8 | uint16 | int8](lhs L, rhs R) (L, Flag
 	return out, FlagRegister(fl)
 }
 
-func hexstr[V uint8 | uint16 | int | int8](v V) string {
+// 0 for left, 1 for right
+func rotate(n uint8, dir int, currFlags Flags, circular bool) (uint8, FlagRegister) {
+	// if circular then carry flag is _updated_, but not used
+	var res uint8
+	var lastCarry uint8
+	if (currFlags & (1 << FLAGC)) > 0 {
+		lastCarry = 1
+	}
+
+	if dir == 0 {
+		lastBit := n >> 7
+		res = n << 1
+		if circular {
+			res |= lastBit
+		} else {
+			res |= lastCarry
+		}
+		var flags Flags
+		if res == 0 {
+			flags |= FLAGZ
+		}
+		if lastBit > 0 {
+			flags |= FLAGC
+		}
+		return res, FlagRegister(flags)
+	}
+	if dir != 1 {
+		panic("dir must be 0 or 1")
+	}
+
+	lastBit := n & 0x01
+	res = n >> 1
+	if circular {
+		res |= (lastBit << 7)
+	} else {
+		res |= (lastCarry << 7)
+	}
+	var flags Flags
+	if res == 0 {
+		flags |= FLAGZ
+	}
+	if lastBit > 0 {
+		flags |= FLAGC
+	}
+	return res, FlagRegister(flags)
+}
+
+func hexstr[V uint8 | uint16 | int | int8](v V, n ...int) string {
+	if len(n) > 0 {
+		// if n is provided, use it as the width
+		return fmt.Sprintf("%0*x", n[0], v)
+	}
 	return fmt.Sprintf("%#x", v)
 }

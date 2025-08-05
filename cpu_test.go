@@ -802,6 +802,35 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectA(0x02)
 			},
 		},
+		{
+			desc: "RL B 0x01",
+			cpu: CPU{
+				B: 0b11000000,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "RL B", "STOP")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectB(0b10000000)
+				cpu.ExpectFlagCarry()
+			},
+		},
+		{
+			desc: "RL (HL) 0x16",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "RL (HL)")
+				m.CursorAt(0x1122)
+				m.Write(0b11000000)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0b10000000)
+				cpu.ExpectFlagCarry()
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {

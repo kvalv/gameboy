@@ -58,7 +58,10 @@ type CPU struct {
 	// whether previous command was the CB-prefix
 	prefix bool
 
-	cycles int
+	cycles     int
+	instrCount int
+	limit      int
+	hooks      []func(*CPU, Instruction, *slog.Logger)
 
 	mem *Memory
 	log *slog.Logger
@@ -157,8 +160,19 @@ func (cpu *CPU) PopStack() uint16 {
 	return concatU16(msb, lsb)
 }
 
+func (cpu *CPU) WithHook(hook func(cpu *CPU, instr Instruction, log *slog.Logger)) *CPU {
+	cpu.hooks = append(cpu.hooks, hook)
+	return cpu
+}
+
 func (cpu *CPU) Step() bool {
+	cpu.instrCount++
 	if cpu.err != nil {
+		return false
+	}
+	if cpu.limit > 0 && cpu.instrCount >= cpu.limit {
+		cpu.err = fmt.Errorf("instruction limit reached: %d", cpu.instrCount)
+		cpu.log.Warn("Instruction limit reached", "limit", cpu.limit, "count", cpu.instrCount)
 		return false
 	}
 	code := cpu.loadU8(cpu.PC)
@@ -166,17 +180,17 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 
-	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(code), "prefix", cpu.prefix, "name", name(code, cpu.prefix))
-	if code == 0x00 {
+	log := cpu.log.With("loc", hexstr(cpu.PC-1, 4), "name", name(code, cpu.prefix), "instr", hexstr(code), "pre", cpu.prefix)
+	if !cpu.prefix && code == 0x00 {
 		cpu.err = ErrNoMoreInstructions
 		return false // NOP command
 	}
-	if code == 0x10 {
+	if !cpu.prefix && code == 0x10 {
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}
 
-	log.Debug("instruction start")
+	log.Debug("instr start")
 
 	var (
 		instr Instruction
@@ -187,6 +201,10 @@ func (cpu *CPU) Step() bool {
 		cpu.prefix = false
 	} else {
 		instr, ok = ops[code]
+	}
+
+	for _, hook := range cpu.hooks {
+		hook(cpu, instr, log)
 	}
 
 	if !ok {
@@ -201,7 +219,7 @@ func (cpu *CPU) Step() bool {
 	// PC towards the last instruction that is done by the op.
 
 	instr(cpu) // execute the operation
-	log.Debug("instruction done", "curr", fmt.Sprintf("%#x", cpu.PC))
+	// log.Debug("instr done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
 	return true
 }
@@ -213,7 +231,9 @@ func (cpu *CPU) IncProgramCounter(src ...string) {
 		if len(src) > 0 {
 			s = src[0]
 		}
-		cpu.log.Debug("PC increment", "new", fmt.Sprintf("%#x", cpu.PC), "src", s)
+		if false {
+			cpu.log.Debug("PC increment", "new", fmt.Sprintf("%#x", cpu.PC), "src", s)
+		}
 	}
 }
 
@@ -228,11 +248,11 @@ func (cpu *CPU) Dump(w io.Writer) {
 	// fmt.Fprintf(w, "HL: %#04x   BC: %#04x   DE: %#04x   AF: %#04x\n", cpu.HL(), cpu.BC(), cpu.DE(), cpu.AF())
 }
 
-type FlagRegister Register
+type FlagRegister = Flags
 
-func (f FlagRegister) HasCarry() bool { return (uint8(f) & uint8(FLAGC)) > 0 }
-func (f FlagRegister) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
-func (f FlagRegister) HasHigh() bool  { return (uint8(f) & uint8(FLAGH)) > 0 }
+func (f Flags) HasCarry() bool { return (uint8(f) & uint8(FLAGC)) > 0 }
+func (f Flags) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
+func (f Flags) HasHigh() bool  { return (uint8(f) & uint8(FLAGH)) > 0 }
 
 func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.mem = mem

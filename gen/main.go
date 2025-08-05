@@ -101,9 +101,25 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "prefix" .DataPrefix -}}
 	{{- else if eq "JR" .Mnemonic -}}
 		{{ template "jr" .DataJr -}}
+	{{- else if eq "RLA" .Mnemonic -}}
+		{{ template "rla" .DataRla -}}
+	{{- else if eq "RRA" .Mnemonic -}}
+		{{ template "rra" .DataRra -}}
+	{{- else if eq "RRCA" .Mnemonic -}}
+		{{ template "rrca" .DataRrca -}}
+	{{- else if eq "RLCA" .Mnemonic -}}
+		{{ template "rlca" .DataRlca -}}
 	{{/* CB-prefixed stuff */}}
 	{{- else if eq "BIT" .Mnemonic -}}
 		{{ template "bit" .DataBit -}}
+	{{- else if eq "RL" .Mnemonic -}}
+		{{ template "rl" .DataRl -}}
+	{{- else if eq "RLC" .Mnemonic -}}
+		{{ template "rlc" .DataRl -}}
+	{{- else if eq "RR" .Mnemonic -}}
+		{{ template "rr" .DataRr -}}
+	{{- else if eq "RRC" .Mnemonic -}}
+		{{ template "rrc" .DataRrc -}}
 	{{else}}
 		panic("TODO {{.ID}}")
 	{{end -}}
