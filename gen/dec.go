@@ -11,7 +11,6 @@ var templDec = template.Must(tmpl.New("dec").
 res, flags := sub({{get .Name .Immediate}}, 0x01)
 cpu.F = flags
 {{set .Name .Immediate "res"}}
-cpu.IncProgramCounter("dec")
 cpu.cycles += {{.CycleCount}}
 `))
 

@@ -166,7 +166,7 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 
-	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(code), "prefix", cpu.prefix)
+	log := cpu.log.With("PC", cpu.PC, "instr", hexstr(code), "prefix", cpu.prefix, "name", name(code, cpu.prefix))
 	if code == 0x00 {
 		cpu.err = ErrNoMoreInstructions
 		return false // NOP command
@@ -176,7 +176,7 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 
-	log.Debug("instruction start", "name", name(code, cpu.prefix))
+	log.Debug("instruction start")
 
 	var (
 		instr Instruction

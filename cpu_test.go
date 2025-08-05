@@ -789,6 +789,19 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectA(0x01)
 			},
 		},
+		{
+			desc:  "LD A,n8 0xF3",
+			debug: true,
+			cpu:   CPU{},
+			initMem: func(m *Memory) {
+				m.Write("LD A,n8", 0x01)
+				m.Write("ADD A,A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.DumpMem(0, 10)
+				cpu.ExpectA(0x02)
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
@@ -992,6 +1005,12 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 		fmt.Fprintf(w, "  %#04X: %02x\n", i, b)
 	}
 	fmt.Fprintln(w, "=== End of stack dump")
+}
+func (cpu *CPUHelper) DumpMem(lower, upper int) {
+	for i := lower; i <= upper; i++ {
+		b, _ := cpu.mem.Access(uint16(i))
+		cpu.t.Logf("mem[%04X] = %02X", i, b)
+	}
 }
 func (cpu *CPUHelper) ExpectCycleCount(want int) {
 	if cpu.cycles != want {

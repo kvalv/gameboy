@@ -10,7 +10,6 @@ var templPop = template.Must(tmpl.New("pop").
 	Parse(`
 value := cpu.PopStack()
 {{set .Name true "value"}}
-cpu.IncProgramCounter("pop")
 cpu.cycles += {{.CycleCount}}
 `))
 

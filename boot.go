@@ -1,30 +1,235 @@
 package gameboy
 
-var BootCode = []Block{
-	{
-		Offset: 0x0000,
-		Data: []byte{
-			code("LD SP,n16"), 0xFF, 0xFE, // setup stack
-			code("XOR A,A"), // Zero the memory from $8000-$9FFF (VRAM)
-			code("LD HL,n16"), 0x9F, 0xFF,
+func GetBootCode() []Block {
+	return []Block{
+		{
+			Offset: 0x0000,
+			Data: []byte{
+				code("LD SP,n16"), 0xFF, 0xFE, // setup stack
+				code("XOR A,A"), // Zero the memory from $8000-$9FFF (VRAM)
+				code("LD HL,n16"), 0x9F, 0xFF,
+			},
 		},
-	},
-	{
-		Offset: 0x0007,
-		Data: []byte{
-			code("LD (HL-),A"), // $0007
-			code("PREFIX"), code("BIT 7,H"),
-			code("JR NZ,e8"), 0x07,
-			code("LD HL,n16"), 0xff, 0x26, // setup audio
-			code("LD C,n8"), 0x11,
-			code("LD A,n8"), 0x80,
-			code("LD (HL-),A"),
-			code("LD C,n8"), 
+		{
+			Offset: 0x0007,
+			Data: []byte{
+				code("LD (HL-),A"), // $0007
+				code("PREFIX"), code("BIT 7,H"),
+				code("JR NZ,e8"), 0x07,
+				code("LD HL,n16"), 0xff, 0x26, // setup audio
+				code("LD C,n8"), 0x11,
+				code("LD A,n8"), 0x80,
+				code("LD (HL-),A"),
+				code("LDH (C),A"),
+				code("INC C"),
+				code("LD A,n8"), 0xf3,
+				code("LDH (C),A"),
+				code("LD (HL-),A"),
+				code("LD A,n8"), 0x77,
+				code("LD (HL),A"),
+				code("LD A,n8"), 0xfc, // setup bg palette
+				code("LDH (a8),A"), 0x47,
+				code("LD DE,n16"), 0x01, 0x04, // convert and load logo data from cart into Video RAM
+				code("LD HL,n16"), 0x80, 0x10,
+			},
 		},
-	},
+		{
+			Offset: 0x0027,
+			Data: []byte{
+				code("LD A,(DE)"),            // $0027
+				code("CALL a16"), 0x95, 0x00, // $0028
+				code("CALL a16"), 0x96, 0x00, // $002b
+				code("INC DE"),        // $002e
+				code("LD A,E"),        // $002f
+				code("CP A,n8"), 0x34, // $0030
+				code("JR NZ,e8"), 0x27, // $0032
+				code("LD DE,n16"), 0x00, 0xd8, // $0034 Load 8 additional bytes into Video RAM (the tile for ®)
+				code("LD B,n8"), 0x08, // $0037
+			},
+		},
+		{
+			Offset: 0x0039,
+			Data: []byte{
+				code("LD A,(DE)"),      // $0039
+				code("INC DE"),         // $003a
+				code("LD (HL+),A"),     // $003b
+				code("INC HL"),         // $003c
+				code("DEC B"),          // $003d
+				code("JR NZ,e8"), 0x39, // $003e
+				code("LD A,n8"), 0x19, // $0040 Setup background tilemap
+				code("LD (a16),A"), 0x10, 0x99, // $0042
+				code("LD HL,n16"), 0x2f, 0x99, // $0045
+			},
+		},
+		{
+			Offset: 0x0048,
+			Data: []byte{
+				code("LD C,n8"), 0x0c, // $0048
+			},
+		},
+		{
+			Offset: 0x004A,
+			Data: []byte{
+				code("DEC A"),         // $004a
+				code("JR Z,e8"), 0x55, // $004b
+				code("LD (HL-),A"),     // $004d
+				code("DEC C"),          // $004e
+				code("JR NZ,e8"), 0x4a, // $004f
+				code("LD L,n8"), 0x0f, // $0051
+				code("JR e8"), 0x48, // $0053
+			},
+		},
+		// ; === Scroll logo on screen, and play logo sound===
+		{
+			Offset: 0x0055,
+			Data: []byte{
+				code("LD H,A"),        // $0055  Initialize scroll count, H=0
+				code("LD A,n8"), 0x64, // $0056
+				code("LD D,A"),           // $0058  set loop count, D=$64
+				code("LDH (a8),A"), 0x42, // $0059  Set vertical scroll register
+				code("LD A,n8"), 0x91, // $005b
+				code("LDH (a8),A"), 0x40, // $005d  Turn on LCD, showing Background
+				code("INC B"), // $005f  Set B=1
+			},
+		},
+		{
+			Offset: 0x0060,
+			Data: []byte{
+				code("LD E,n8"), 0x02, // $0060
+			},
+		},
+		{
+			Offset: 0x0062,
+			Data: []byte{
+				code("LD C,n8"), 0x0c, // $0062
+			},
+		},
+		{
+			Offset: 0x0064,
+			Data: []byte{
+				code("LDH A,(a8)"), 0x44, // $0064 wait for screen frame
+				code("CP A,n8"), 0x90, // $0066
+				code("JR NZ,e8"), 0x64, // $0068
+				code("DEC C"),          // $006a
+				code("JR NZ,e8"), 0x64, // $006b
+				code("DEC E"),          // $006d
+				code("JR NZ,e8"), 0x62, // $006e
+				code("LD C,n8"), 0x13, // $0070
+				code("INC H"),         // $0072  increment scroll count
+				code("LD A,H"),        // $0073
+				code("LD E,n8"), 0x83, // $0074
+				code("CP A,n8"), 0x62, // $0076  $62 counts in, play sound #1
+				code("JR Z,e8"), 0x80, // $0078
+				code("LD E,n8"), 0xc1, // $007a
+				code("CP A,n8"), 0x64, // $007c
+				code("JR NZ,e8"), 0x86, // $007e  $64 counts in, play sound #2
+			},
+		},
+		{
+			Offset: 0x0080,
+			Data: []byte{
+				code("LD A,E"),          // $0080  play sound
+				code("LDH (C),A"), 0xFF, // $0081
+				code("INC C"),         // $0082
+				code("LD A,n8"), 0x87, // $0083
+				code("LDH (C),A"), 0xFF, // $0085
+			},
+		},
+		{
+			Offset: 0x0086,
+			Data: []byte{
+				code("LDH A,(a8)"), 0x42, // $0086
+				code("SUB A,B"),          // $0088
+				code("LDH (a8),A"), 0x42, // $0089  scroll logo up if B=1
+				code("DEC D"),          // $008b
+				code("JR NZ,e8"), 0x60, // $008c
+				code("DEC B"),          // $008e  set B=0 first time
+				code("JR NZ,e8"), 0xE0, // $008f    ... next time, cause jump to "Nintendo Logo check"
+				code("LD D,n8"), 0x20, // $0091  use scrolling loop to pause
+				code("JR e8"), 0x60, // $0093
+				// ==== Graphic routine ====
+				code("LD C,A"),        // $0095  "Double up" all the bits of the graphics data
+				code("LD B,n8"), 0x04, // $0096     and store in Video RAM
+			},
+		},
+	}
 }
 
 /*
+Addr_0098:
+	PUSH BC		; $0098
+	RL C			; $0099
+	RLA			; $009b
+	POP BC		; $009c
+	RL C			; $009d
+	RLA			; $009f
+	DEC B			; $00a0
+	JR NZ, Addr_0098	; $00a1
+	LD (HL+),A		; $00a3
+	INC HL		; $00a4
+	LD (HL+),A		; $00a5
+	INC HL		; $00a6
+	RET			; $00a7
+
+Addr_00A8:
+	;Nintendo Logo
+	.DB $CE,$ED,$66,$66,$CC,$0D,$00,$0B,$03,$73,$00,$83,$00,$0C,$00,$0D
+	.DB $00,$08,$11,$1F,$88,$89,$00,$0E,$DC,$CC,$6E,$E6,$DD,$DD,$D9,$99
+	.DB $BB,$BB,$67,$63,$6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E
+
+Addr_00D8:
+	;More video data (the tile data for ®)
+	.DB $3C,$42,$B9,$A5,$B9,$A5,$42,$3C
+
+	; ===== Nintendo logo comparison routine =====
+
+Addr_00E0:
+	LD HL,$0104		; $00e0	; point HL to Nintendo logo in cart
+	LD DE,$00a8		; $00e3	; point DE to Nintendo logo in DMG rom
+
+Addr_00E6:
+	LD A,(DE)		; $00e6
+	INC DE		; $00e7
+	CP (HL)		; $00e8	;compare logo data in cart to DMG rom
+	JR NZ,$fe		; $00e9	;if not a match, lock up here
+	INC HL		; $00eb
+	LD A,L		; $00ec
+	CP $34		; $00ed	;do this for $30 bytes
+	JR NZ, Addr_00E6	; $00ef
+
+	LD B,$19		; $00f1
+	LD A,B		; $00f3
+Addr_00F4:
+	ADD (HL)		; $00f4
+	INC HL		; $00f5
+	DEC B			; $00f6
+	JR NZ, Addr_00F4	; $00f7
+	ADD (HL)		; $00f9
+	JR NZ,$fe		; $00fa	; if $19 + bytes from $0134-$014D  don't add to $00
+						;  ... lock up
+
+	LD A,$01		; $00fc
+	LD ($FF00+$50),A	; $00fe	;turn off DMG rom
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== done ===
+
+
+
 	LD SP,$fffe		; $0000  Setup Stack
 
 	XOR A			; $0003  Zero the memory from $8000-$9FFF (VRAM)
@@ -83,9 +288,7 @@ Addr_004A:
 	JR NZ, Addr_004A	; $004f
 	LD L,$0f		; $0051
 	JR Addr_0048	; $0053
-
 	; === Scroll logo on screen, and play logo sound===
-
 Addr_0055:
 	LD H,A		; $0055  Initialize scroll count, H=0
 	LD A,$64		; $0056
@@ -139,58 +342,6 @@ Addr_0086:
 
 	LD C,A		; $0095  "Double up" all the bits of the graphics data
 	LD B,$04		; $0096     and store in Video RAM
-Addr_0098:
-	PUSH BC		; $0098
-	RL C			; $0099
-	RLA			; $009b
-	POP BC		; $009c
-	RL C			; $009d
-	RLA			; $009f
-	DEC B			; $00a0
-	JR NZ, Addr_0098	; $00a1
-	LD (HL+),A		; $00a3
-	INC HL		; $00a4
-	LD (HL+),A		; $00a5
-	INC HL		; $00a6
-	RET			; $00a7
 
-Addr_00A8:
-	;Nintendo Logo
-	.DB $CE,$ED,$66,$66,$CC,$0D,$00,$0B,$03,$73,$00,$83,$00,$0C,$00,$0D
-	.DB $00,$08,$11,$1F,$88,$89,$00,$0E,$DC,$CC,$6E,$E6,$DD,$DD,$D9,$99
-	.DB $BB,$BB,$67,$63,$6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E
 
-Addr_00D8:
-	;More video data (the tile data for ®)
-	.DB $3C,$42,$B9,$A5,$B9,$A5,$42,$3C
-
-	; ===== Nintendo logo comparison routine =====
-
-Addr_00E0:
-	LD HL,$0104		; $00e0	; point HL to Nintendo logo in cart
-	LD DE,$00a8		; $00e3	; point DE to Nintendo logo in DMG rom
-
-Addr_00E6:
-	LD A,(DE)		; $00e6
-	INC DE		; $00e7
-	CP (HL)		; $00e8	;compare logo data in cart to DMG rom
-	JR NZ,$fe		; $00e9	;if not a match, lock up here
-	INC HL		; $00eb
-	LD A,L		; $00ec
-	CP $34		; $00ed	;do this for $30 bytes
-	JR NZ, Addr_00E6	; $00ef
-
-	LD B,$19		; $00f1
-	LD A,B		; $00f3
-Addr_00F4:
-	ADD (HL)		; $00f4
-	INC HL		; $00f5
-	DEC B			; $00f6
-	JR NZ, Addr_00F4	; $00f7
-	ADD (HL)		; $00f9
-	JR NZ,$fe		; $00fa	; if $19 + bytes from $0134-$014D  don't add to $00
-						;  ... lock up
-
-	LD A,$01		; $00fc
-	LD ($FF00+$50),A	; $00fe	;turn off DMG rom
 */
