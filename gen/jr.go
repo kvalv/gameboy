@@ -7,9 +7,11 @@ var templJr = template.Must(tmpl.New("jr").
 		"get":         get,
 		"cond":        cond,
 		"indexOrLast": indexOrLast[int],
+		"pc":          pc,
 	}).
 	Parse(`
 e := {{get "e8" true}}
+{{pc "e8"}}
 if {{cond .Predicate}} {
 	cpu.PC, cpu.F = add(cpu.PC, e)
 	cpu.cycles += {{ indexOrLast .Cycles 0 }}

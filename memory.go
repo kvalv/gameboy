@@ -89,11 +89,49 @@ func (m *Memory) Dump(w io.Writer) {
 	fmt.Fprintln(w, hex.Dump(m.data))
 }
 
+// LY indicates the current horizontal line, which might be about to be drawn,
+// being drawn, or just been drawn. LY can hold any value from 0 to 153, with
+// values from 144 to 153 indicating the VBlank period.
+func (m *Memory) LY() uint8 {
+	return m.data[0xFF44]
+}
+func (m *Memory) SetLY() {
+	m.data[0xFF44] = 0x90
+}
+
+// These two registers specify the on-screen coordinates of the Window’s
+// top-left pixel.
+// WX=0..166 and WY=0..143
+// Putting WX=7 and WY=0 places the Window at top left corner
+func (m *Memory) WY() uint8 { return m.data[0xFF4a] }
+func (m *Memory) WX() uint8 { return m.data[0xff4b] }
+
 type VRAM struct {
 	TileData1 []byte // 4kB: 2kB unique, 2kB overlap with TileData2
 	TileData2 []byte // 4kB: 2kB overlap with TileData1 and 2kB unique
 	TileView1 []byte // 1kB
 	TileView2 []byte // 1kB
+}
+
+func (v VRAM) HasData() bool {
+	someSet := func(inp []byte) bool {
+		for _, b := range inp {
+			if b > 0 {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, arg := range [][]byte{
+		v.TileData1, v.TileData2,
+		v.TileView1, v.TileView2,
+	} {
+		if someSet(arg) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Memory) VRAM() VRAM {

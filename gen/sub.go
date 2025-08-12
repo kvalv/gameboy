@@ -6,10 +6,12 @@ var templSub = template.Must(tmpl.New("sub").
 	Funcs(template.FuncMap{
 		"get": get,
 		"set": set,
+		"pc":  pc,
 	}).
 	Parse(`
 res, flags := sub({{get "A" true}}, {{get .Name .Immediate}})
 {{set "A" true "res"}}
+{{pc .Name}}
 cpu.F = flags
 cpu.cycles += {{.CycleCount}}
 `))

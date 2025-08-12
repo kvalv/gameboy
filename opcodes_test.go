@@ -11,7 +11,7 @@ func TestAdd(t *testing.T) {
 	}{
 		{
 			desc: "ADD_09",
-			op:   ADD_09,
+			op:   ADD_09{},
 		},
 	}
 
@@ -48,7 +48,7 @@ func TestOpcodes(t *testing.T) {
 			cpu.A = tc.lhs
 			cpu.B = tc.rhs
 
-			ADD_80(cpu)
+			ADD_80{}.Exec(cpu)
 			if cpu.A != tc.wantRes {
 				t.Fatalf("expected %d, got %d", tc.wantRes, cpu.A)
 			}

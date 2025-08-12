@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 )
 
 type Register = uint8
@@ -59,19 +60,32 @@ type CPU struct {
 	prefix bool
 
 	cycles     int
-	instrCount int
+	InstrCount int
 	limit      int
-	hooks      []func(*CPU, Instruction, *slog.Logger)
+	hooks      []func(*CPU, int, Instruction, *slog.Logger)
+	stopAtnop  bool
 
-	mem *Memory
+	Mem *Memory
 	log *slog.Logger
 
 	// last error from Step()
 	err error
 }
 
+func (cpu *CPU) CurrentInstr() Instruction {
+	code := cpu.loadU8(cpu.PC)
+	if cpu.prefix {
+		return extOps[code]
+	}
+	return ops[code]
+}
+
 func (cpu *CPU) Err() error {
 	return cpu.err
+}
+func (cpu *CPU) WithLog(log *slog.Logger) *CPU {
+	cpu.log = log
+	return cpu
 }
 
 func (cpu *CPU) HL() uint16 { return concatU16(cpu.H, cpu.L) }
@@ -81,12 +95,12 @@ func (cpu *CPU) AF() uint16 { return concatU16(cpu.A, Register(cpu.F)) }
 
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
-	b, ok := cpu.mem.Access(addr)
+	b, ok := cpu.Mem.Access(addr)
 	// cpu.log.Debug("Accessing memory", "loc", hexstr(addr), "res", hexstr(b))
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
-	cpu.IncProgramCounter()
+	// cpu.IncProgramCounter()
 	switch concr := dst.(type) {
 	case *uint8:
 		*concr = b
@@ -109,8 +123,8 @@ func (cpu *CPU) readU8(addr uint16) uint8 {
 }
 func (cpu *CPU) readU16(addr uint16) uint16 {
 	var msb, lsb byte
-	cpu.load(addr, &msb)
-	cpu.load(addr+1, &lsb)
+	cpu.load(addr, &lsb)
+	cpu.load(addr+1, &msb)
 	return concatU16(msb, lsb)
 }
 func (cpu *CPU) readI8(addr uint16) int8 {
@@ -121,15 +135,15 @@ func (cpu *CPU) readI8(addr uint16) int8 {
 
 // Writing to stack: use PushStack instead of this.
 func (cpu *CPU) WriteMemory(addr uint16, value any) {
-	if cpu.mem == nil {
+	if cpu.Mem == nil {
 		panic("cpu.mem is nil")
 	}
 	switch value := value.(type) {
 	case uint8:
-		cpu.mem.WriteData(addr, []byte{value})
+		cpu.Mem.WriteData(addr, []byte{value})
 	case uint16:
 		msb, lsb := split(value)
-		cpu.mem.WriteData(addr, []byte{lsb, msb})
+		cpu.Mem.WriteData(addr, []byte{lsb, msb})
 	}
 }
 
@@ -160,28 +174,40 @@ func (cpu *CPU) PopStack() uint16 {
 	return concatU16(msb, lsb)
 }
 
-func (cpu *CPU) WithHook(hook func(cpu *CPU, instr Instruction, log *slog.Logger)) *CPU {
+// 0th entry is the ... of stack
+func (cpu *CPU) Stack() []uint16 {
+	var stack []uint16
+	for ptr := cpu.SP; ptr < 0xFFFF; ptr = ptr - 2 {
+		lsb := cpu.readU8(ptr)
+		msb := cpu.readU8(ptr - 1)
+		stack = append(stack, concatU16(msb, lsb))
+	}
+	return stack
+}
+
+func (cpu *CPU) WithHook(hook func(cpu *CPU, loc int, instr Instruction, log *slog.Logger)) *CPU {
 	cpu.hooks = append(cpu.hooks, hook)
 	return cpu
 }
 
 func (cpu *CPU) Step() bool {
-	cpu.instrCount++
+	cpu.InstrCount++
 	if cpu.err != nil {
 		return false
 	}
-	if cpu.limit > 0 && cpu.instrCount >= cpu.limit {
-		cpu.err = fmt.Errorf("instruction limit reached: %d", cpu.instrCount)
-		cpu.log.Warn("Instruction limit reached", "limit", cpu.limit, "count", cpu.instrCount)
+	if cpu.limit > 0 && cpu.InstrCount >= cpu.limit {
+		cpu.err = fmt.Errorf("instruction limit reached: %d", cpu.InstrCount)
+		cpu.log.Warn("Instruction limit reached", "limit", cpu.limit, "count", cpu.InstrCount)
 		return false
 	}
 	code := cpu.loadU8(cpu.PC)
+	cpu.IncProgramCounter()
 	if cpu.err != nil { // if loading next instruction failed, we'll stop
 		return false
 	}
 
 	log := cpu.log.With("loc", hexstr(cpu.PC-1, 4), "name", name(code, cpu.prefix), "instr", hexstr(code), "pre", cpu.prefix)
-	if !cpu.prefix && code == 0x00 {
+	if !cpu.prefix && code == 0x00 && cpu.stopAtnop {
 		cpu.err = ErrNoMoreInstructions
 		return false // NOP command
 	}
@@ -190,7 +216,7 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 
-	log.Debug("instr start")
+	// log.Debug("instr start")
 
 	var (
 		instr Instruction
@@ -204,7 +230,7 @@ func (cpu *CPU) Step() bool {
 	}
 
 	for _, hook := range cpu.hooks {
-		hook(cpu, instr, log)
+		hook(cpu, int(cpu.PC)-1, instr, log)
 	}
 
 	if !ok {
@@ -218,7 +244,7 @@ func (cpu *CPU) Step() bool {
 	// by op. However, for instructions that load data, the op should move the
 	// PC towards the last instruction that is done by the op.
 
-	instr(cpu) // execute the operation
+	instr.Exec(cpu)
 	// log.Debug("instr done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
 	return true
@@ -255,8 +281,14 @@ func (f Flags) HasZero() bool  { return (uint8(f) & uint8(FLAGZ)) > 0 }
 func (f Flags) HasHigh() bool  { return (uint8(f) & uint8(FLAGH)) > 0 }
 
 func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
-	cpu.mem = mem
+	cpu.Mem = mem
 	cpu.log = log
+
+	go func() {
+		for range time.Tick(time.Millisecond) {
+			cpu.Mem.SetLY()
+		}
+	}()
 
 	for cpu.Step() {
 	}

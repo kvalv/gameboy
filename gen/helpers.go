@@ -51,6 +51,17 @@ func get(name string, immediate bool) string {
 	return fmt.Sprintf("// TODO - get not implemented %s", name)
 }
 
+func pc(name string) string {
+	switch name {
+	case "a8", "n8", "e8":
+		return "cpu.IncProgramCounter()"
+	case "a16", "n16":
+		return "cpu.IncProgramCounter(); cpu.IncProgramCounter()"
+	default:
+		return ""
+	}
+}
+
 // generates the code that writes, either to a register, or to memory
 // e.g. `cpu.WriteMemory(cpu.A, data)` or `cpu.A = cpu.B`
 func set(name string, immediate bool, expr string) string {

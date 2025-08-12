@@ -6,10 +6,14 @@ var templLdh = template.Must(tmpl.New("ldh").
 	Funcs(template.FuncMap{
 		"get": get,
 		"set": set,
+		"pc":  pc,
 	}).
 	Parse(`
+pc0 := cpu.PC
 value := {{get .Rhs .RhsImmediate}}
 {{set .Lhs .LhsImmediate "value"}}
+{{pc .Rhs}}
+cpu.PC = pc0 + 1
 cpu.cycles += {{.CycleCount}}
 `))
 

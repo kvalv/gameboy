@@ -6,9 +6,11 @@ var templXor = template.Must(tmpl.New("xor").
 	Funcs(template.FuncMap{
 		"get": get,
 		"set": set,
+		"pc":  pc,
 	}).
 	Parse(`
 res := {{get "A" true}} ^ {{get .Name .Immediate}}
+{{pc .Name}}
 var flags Flags
 if res == 0 {
 	flags |= FLAGZ

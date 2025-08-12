@@ -60,11 +60,16 @@ func generateInstructions(file string) error {
 
 var tmpl = template.Must(template.New("main").Parse(`package gameboy
 import "fmt"
-type Instruction func(cpu *CPU)
+type Instruction interface {
+	Exec(cpu *CPU)
+	Code() uint8
+	String() string
+}
 
 {{ range .Both }}
 // {{.Desc}}
-func {{.ID}}(cpu *CPU) {
+type {{.ID}} struct {}
+func ({{.ID}}) Exec(cpu *CPU) {
 	{{- if eq "ADD" .Mnemonic -}} 
 		{{template "add" .DataAdd -}}
 	{{- else if eq "SUB" .Mnemonic -}}
@@ -109,6 +114,8 @@ func {{.ID}}(cpu *CPU) {
 		{{ template "rrca" .DataRrca -}}
 	{{- else if eq "RLCA" .Mnemonic -}}
 		{{ template "rlca" .DataRlca -}}
+	{{- else if eq "NOP" .Mnemonic -}}
+		{{ template "nop" .DataNop -}}
 	{{/* CB-prefixed stuff */}}
 	{{- else if eq "BIT" .Mnemonic -}}
 		{{ template "bit" .DataBit -}}
@@ -124,16 +131,22 @@ func {{.ID}}(cpu *CPU) {
 		panic("TODO {{.ID}}")
 	{{end -}}
 }
+func ({{.ID}}) Code() uint8 {
+	return {{printf "%#X" .Code}}
+}
+func ({{.ID}}) String() string {
+	return "{{.String}}"
+}
 {{end}}
 
 var ops = map[uint8]Instruction{
 	{{ range .Main -}}
-	{{printf "%#x" .Code}}: {{.ID}},
+	{{printf "%#x" .Code}}: {{.ID}}{},
 	{{end}}
 }
 var extOps = map[uint8]Instruction{
 	{{ range .Ext -}}
-	{{printf "%#x" .Code}}: {{.ID}},
+	{{printf "%#x" .Code}}: {{.ID}}{},
 	{{end}}
 }
 

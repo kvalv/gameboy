@@ -9,10 +9,13 @@ var templCall = template.Must(tmpl.New("call").
 		"get":  get,
 		"set":  set,
 		"cond": cond,
+		"pc":   pc,
 	}).
 	Parse(`
 lsb := cpu.readU8(cpu.PC)
+cpu.IncProgramCounter()
 msb := cpu.readU8(cpu.PC)
+cpu.IncProgramCounter()
 nn := concatU16(msb, lsb)
 if {{cond .Predicate }} {
 	cpu.PushStack(cpu.PC)

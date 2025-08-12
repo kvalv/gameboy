@@ -1,6 +1,7 @@
 package gameboy
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -831,6 +832,56 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectFlagCarry()
 			},
 		},
+		{
+			desc:  "LDH regression",
+			cpu:   CPU{},
+			debug: true,
+			initMem: func(m *Memory) {
+				m.Write("LDH A,(a8)", 0x44)
+				m.Write("CP A,n8", 0x01)
+				m.CursorAt(0xFF44)
+				m.Write(0x01)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "RLA with carry",
+			cpu: CPU{
+				F: FLAGC,
+			},
+			initMem: func(m *Memory) {
+				m.Write("RLA")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(1)
+			},
+		},
+		{
+			desc: "RLA always zero flag",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write("RLA")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagZeroUnset()
+			},
+		},
+		{
+			desc: "RLA rotate around",
+			cpu: CPU{
+				A: 1,
+			},
+			initMem: func(m *Memory) {
+				for range 8 {
+					m.Write("RLA")
+				}
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectFlagCarry()
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
@@ -842,9 +893,11 @@ func TestInstructions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cpu := &tc.cpu
+			cpu.stopAtnop = true
 			initCPU(cpu)
 			mem := NewMemory()
 			tc.initMem(mem)
+			mem.Write(INSTR_STOP) // ensure we have a stop instruction at the end
 			Run(cpu, mem, logger(tc.debug))
 
 			defer func() {
@@ -993,7 +1046,7 @@ func (cpu *CPUHelper) ExpectFlagHigh() {
 }
 func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
 	cpu.t.Helper()
-	got, ok := cpu.mem.Access(offset)
+	got, ok := cpu.Mem.Access(offset)
 	if !ok {
 		cpu.t.Fatalf("illegal offset %d", offset)
 	}
@@ -1004,11 +1057,11 @@ func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
 func (cpu *CPUHelper) ExpectPeekStack(want any) {
 	t := cpu.t
 	// in other words: MSB is the HIGH address, LSB is the LOW address
-	msb, ok := cpu.mem.Access(cpu.SP + 1)
+	msb, ok := cpu.Mem.Access(cpu.SP + 1)
 	if !ok {
 		t.Fatalf("failed to read msb at %#v", cpu.SP)
 	}
-	lsb, ok := cpu.mem.Access(cpu.SP)
+	lsb, ok := cpu.Mem.Access(cpu.SP)
 	if !ok {
 		t.Fatalf("failed to read lsb at %#v", cpu.SP+1)
 	}
@@ -1027,7 +1080,7 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 	t.Helper()
 	fmt.Fprintln(w, "=== Dumping stack:")
 	for i := uint16(0xffff); i >= cpu.SP; i-- {
-		b, ok := cpu.mem.Access(i)
+		b, ok := cpu.Mem.Access(i)
 		if !ok {
 			t.Fatalf("failed to read stack at %#x", i)
 		}
@@ -1036,10 +1089,11 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 	fmt.Fprintln(w, "=== End of stack dump")
 }
 func (cpu *CPUHelper) DumpMem(lower, upper int) {
-	for i := lower; i <= upper; i++ {
-		b, _ := cpu.mem.Access(uint16(i))
-		cpu.t.Logf("mem[%04X] = %02X", i, b)
-	}
+	// 	for i := lower; i <= upper; i++ {
+	// 		b, _ := cpu.mem.Access(uint16(i))
+	// 		cpu.t.Logf("mem[%04X] = %02X", i, b)
+	// 	}
+	fmt.Printf("%s\n", hex.Dump(cpu.Mem.data[lower:upper]))
 }
 func (cpu *CPUHelper) ExpectCycleCount(want int) {
 	if cpu.cycles != want {

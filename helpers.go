@@ -64,7 +64,7 @@ func rotate(n uint8, dir int, currFlags Flags, circular bool) (uint8, FlagRegist
 	// if circular then carry flag is _updated_, but not used
 	var res uint8
 	var lastCarry uint8
-	if (currFlags & (1 << FLAGC)) > 0 {
+	if (currFlags & FLAGC) > 0 {
 		lastCarry = 1
 	}
 

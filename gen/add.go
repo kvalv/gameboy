@@ -6,10 +6,13 @@ var templAdd = template.Must(tmpl.New("add").
 	Funcs(template.FuncMap{
 		"get": get,
 		"set": set,
+		"pc":  pc,
 	}).
 	Parse(`
 lhs := {{get .Dst true}}
 rhs := {{get .Rhs .RhsImmediate}}
+{{pc .Dst}}
+{{pc .Rhs}}
 res, flags := add(lhs, rhs)
 {{set .Dst true "res"}}
 cpu.F = flags

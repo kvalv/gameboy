@@ -6,18 +6,22 @@ var templLd = template.Must(tmpl.New("ld").
 	Funcs(template.FuncMap{
 		"get": get,
 		"set": set,
+		"pc":  pc,
 	}).
 	Parse(`
 {{if eq .Code 0xF8}}
 	e := {{get "e8" true}}
+	{{pc "e8"}}
 	res, flags := add({{get "SP" true}}, e)
 	{{set "HL" true "res"}}
 	cpu.F = flags
 	cpu.cycles += {{.CycleCount}}
 {{else}}
 	data := {{get .Src .SrcImmediate}}
+	{{pc .Src}}
 	
 	{{set .Dst .DstImmediate "data"}}
+	{{pc .Dst}}
 
 	{{if .PostIncrement -}}
 	incr, flags := add({{get .Dst true}}, 0x01)
