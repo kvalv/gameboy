@@ -25,7 +25,7 @@ before execution of the cartridge ROM starting at 0x0100.
 
 - 0x0000 - 0x3fff -  16kB - ROM Bank #0
 - 0x4000 - 0x7fff -  16kB - Switchable ROM Bank
-- 0x8000 - 0xafff -   8kB - Video RAM
+- 0x8000 - 0xafff -   8kB - Video RAM (VRAM)
 - 0xa000 - 0xbfff -   8kB - Switchable RAM Bank
 - 0xc000 - 0xdfff -   8kB - Internal RAM
 - 0xe000 - 0xfdff - 7.5kB - Echo of Internal RAM
@@ -44,7 +44,7 @@ Video RAM
 0x800 + 4kB = 0x8000 + 0x0800 -> 0x8800 -> but sub 1 -> 0x87ff
 
 # Display
-Screen view 160x144 px
+Screen view 160x144 px (width, height)
 Tile view is larger than screen view, so the developer must choose the section to display.
 The `SCY` and `SCX` "registers", located at 0xFF42, 0xFF43
 
@@ -101,6 +101,11 @@ From top to bottom (repeat 144 times):
 ## Registers
 - `0xFF50`: BOOT - Boot ROM lock register. Last bit is disabled by default, and if set then boot is off.
 
+### Graphics
+- `FF47`: BG Palette Data (assign gray shades to background tiles)
+
+### Audio
+- `0xFF26`: Audio master register
 
 # (Function) calls
 Return addresses are pushed to stack using `CALL` and popped using `RET`. The stack
@@ -112,8 +117,13 @@ PC to the another address. When the call returns, pop from stack
 to retrieve previous location.
 
 
+
+
 # End
 References: 
 - https://gekkio.fi/files/gb-docs/gbctr.pdf
 - https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+- https://gbdev.io/resources.html#tools
 
+List of Boot ROMs, raw binary
+- https://gbdev.gg8.se/files/roms/bootroms/

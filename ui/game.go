@@ -24,9 +24,9 @@ type Game struct {
 
 	debugger Debugger
 
-	// reference to the lcd screen
-	lcd  *LCD
-	init bool
+	// reference to the screen screen
+	screen *Screen
+	init   bool
 }
 
 func NewGame() *Game {
@@ -62,7 +62,7 @@ func NewGame() *Game {
 	game := &Game{
 		displayVRAM: NewDisplayVRAM(cpu.Mem),
 		input:       NewInput(),
-		lcd:         NewLCD(),
+		screen:      NewScreen(&cpu),
 		cpu:         &cpu,
 	}
 
@@ -89,7 +89,7 @@ func (g *Game) Update() error {
 	}
 
 	_, err := g.debugui.Update(func(ctx *debugui.Context) error {
-		ctx.Window("Debugger", image.Rect(0, 150, 150, 250), func(layout debugui.ContainerLayout) {
+		ctx.Window("Debugger", image.Rect(300, 0, 450, 150), func(layout debugui.ContainerLayout) {
 			ctx.Text(g.cpu.CurrentInstr().String())
 			ctx.Checkbox(&g.debugger.Enabled, "Debug enabled").On(func() {
 				fmt.Printf("Enabled")
@@ -122,8 +122,8 @@ func (g *Game) Update() error {
 	// otherwise just run regularly...
 	if !g.init {
 		g.init = true
-		for g.cpu.InstrCount < 1000000 {
-			// for !g.cpu.Mem.VRAM().HasData() {
+		// for g.cpu.InstrCount < 1000000 {
+		for !g.cpu.Mem.VRAM().HasData() {
 			g.cpu.Step()
 		}
 		fmt.Printf("data is now set\n")
@@ -149,14 +149,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA64{0xff, 0x00, 0x00, 0xaa})
 
 	// // lcd image
-	// lcdImage := ebiten.NewImage(g.lcd.Size())
-	// g.lcd.Draw(lcdImage)
-	// drawRelative(screen, lcdImage, 0.8, 0.5)
+	lcdImage := ebiten.NewImage(g.screen.Size())
+	g.screen.Draw(lcdImage)
+	drawRelative(screen, lcdImage, 0.8, 0.5)
 
 	// vram
 	vramImage := ebiten.NewImage(g.displayVRAM.Size())
 	g.displayVRAM.Draw(vramImage)
-	drawRelative(screen, vramImage, 0.8, 0.5)
+	drawRelative(screen, vramImage, 0.0, 0.8)
 
 	// debug stuff 1
 	var b strings.Builder
