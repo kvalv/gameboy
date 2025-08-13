@@ -47,20 +47,6 @@ func NewGame() *Game {
 	cpu.Mem.CursorAt(0x0104)
 	cpu.Mem.Write(gameboy.BootLogo)
 	cpu.WithHook(func(cpu *gameboy.CPU, loc int, instr gameboy.Instruction, log *slog.Logger) {
-		if loc == 0x28 { // after ld a,(de)
-			log.Info("reading bit",
-				"A", hexstr(cpu.A),
-				"DE", hexstr(cpu.DE()),
-				"instr", hexstr(instr.Code()),
-			)
-		}
-		if loc == 0x00a3 {
-			log.Info("writing to vram?",
-				"HL", hexstr(cpu.HL()),
-				"A", hexstr(cpu.A),
-				"instr", hexstr(instr.Code()),
-			)
-		}
 	})
 	game := &Game{
 		displayVRAM:    NewDisplayVRAM(cpu.Mem),

@@ -103,7 +103,6 @@ func (cpu *CPU) AF() uint16 { return concatU16(cpu.A, Register(cpu.F)) }
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
 	b, ok := cpu.Mem.Access(addr)
-	// cpu.log.Debug("Accessing memory", "loc", hexstr(addr), "res", hexstr(b))
 	if !ok {
 		cpu.err = ErrNoMoreInstructions
 	}
@@ -155,7 +154,6 @@ func (cpu *CPU) WriteMemory(addr uint16, value any) {
 }
 
 func (cpu *CPU) PushStack(value any) {
-	cpu.log.Debug("Writing to stack", "SP", hexstr(cpu.SP), "value", value)
 	switch value := value.(type) {
 	case uint16:
 		msb, lsb := split(value)
@@ -166,10 +164,8 @@ func (cpu *CPU) PushStack(value any) {
 	default:
 		panic(fmt.Sprintf("cpu.PushStack: not implemented for %T", value))
 	}
-	cpu.log.Debug("Stack after push", "SP", hexstr(cpu.SP))
 }
 func (cpu *CPU) PopStack() uint16 {
-	cpu.log.Debug("Popping stack", "SP", hexstr(cpu.SP))
 	if cpu.SP == 0xFFFF {
 		cpu.err = ErrStackUnderflow
 		return 0
@@ -213,7 +209,7 @@ func (cpu *CPU) Step() bool {
 		return false
 	}
 
-	log := cpu.log.With("loc", hexstr(cpu.PC-1, 4), "name", name(code, cpu.prefix), "instr", hexstr(code), "pre", cpu.prefix)
+	// log := cpu.log.With("loc", hexstr(cpu.PC-1, 4), "name", name(code, cpu.prefix), "instr", hexstr(code), "pre", cpu.prefix)
 	if !cpu.prefix && code == 0x00 && cpu.stopAtnop {
 		cpu.err = ErrNoMoreInstructions
 		return false // NOP command
@@ -222,8 +218,6 @@ func (cpu *CPU) Step() bool {
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}
-
-	// log.Debug("instr start")
 
 	var (
 		instr Instruction
@@ -237,7 +231,7 @@ func (cpu *CPU) Step() bool {
 	}
 
 	for _, hook := range cpu.hooks {
-		hook(cpu, int(cpu.PC)-1, instr, log)
+		hook(cpu, int(cpu.PC)-1, instr, cpu.log)
 	}
 
 	if !ok {
@@ -252,7 +246,6 @@ func (cpu *CPU) Step() bool {
 	// PC towards the last instruction that is done by the op.
 
 	instr.Exec(cpu)
-	// log.Debug("instr done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
 	cpu.ppu.Step(cpu)
 
