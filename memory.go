@@ -30,6 +30,12 @@ func (m *Memory) Access(p uint16) (byte, bool) {
 	}
 	return m.data[p], true
 }
+func (m *Memory) AccessU16(p uint16) uint16 {
+	// var msb, lsb byte
+	lsb, _ := m.Access(p)
+	msb, _ := m.Access(p + 1)
+	return concatU16(msb, lsb)
+}
 
 func (m *Memory) WriteInstr(v uint8) *Memory {
 	return m.Write(v)
@@ -88,16 +94,6 @@ func (m *Memory) WriteData(off uint16, p []byte) *Memory {
 
 func (m *Memory) Dump(w io.Writer) {
 	fmt.Fprintln(w, hex.Dump(m.data))
-}
-
-// LY indicates the current horizontal line, which might be about to be drawn,
-// being drawn, or just been drawn. LY can hold any value from 0 to 153, with
-// values from 144 to 153 indicating the VBlank period.
-func (m *Memory) LY() uint8 {
-	return m.data[0xFF44]
-}
-func (m *Memory) SetLY() {
-	m.data[0xFF44] = 0x90
 }
 
 // These two registers specify the on-screen coordinates of the Window’s
@@ -161,13 +157,48 @@ func (m *Memory) VRAM() VRAM {
 	}
 }
 
+const (
+	ADDR_LCDC = 0xff40
+	ADDR_STAT = 0xff41
+	ADDR_SCY  = 0xff42
+	ADDR_SCK  = 0xff43
+	ADDR_LY   = 0xff44
+	ADDR_LYC  = 0xff45
+)
+
+type ControlRegisterPPU byte
+
+func (r ControlRegisterPPU) bitb(n int) bool         { return bit(byte(r), n) > 0 }
+func (r ControlRegisterPPU) BackgroundDisplay() bool { return r.bitb(0) }
+func (r ControlRegisterPPU) SpriteDisplay() bool     { return r.bitb(1) }
+
+// ... bunch of others
+
+func (m *Memory) LCDC() ControlRegisterPPU { return ControlRegisterPPU(m.data[ADDR_LCDC]) }
+func (m *Memory) STAT() uint8              { return m.data[ADDR_STAT] }
+
 // These two registers specify the top-left coordinates of the visible 160×144
 // pixel area within the 256×256 pixels BG map. Values in the range 0–255 may
 // be used.
-func (m *Memory) SCY() uint8 { return m.data[0xFF42] }
-func (m *Memory) SCX() uint8 { return m.data[0xFF43] }
+func (m *Memory) SCY() uint8 { return m.data[ADDR_SCY] } // Vertical Scroll Register
+func (m *Memory) SCX() uint8 { return m.data[ADDR_SCK] } // Horizontal Scroll Register
+
+// LY indicates the current horizontal line, which might be about to be drawn,
+// being drawn, or just been drawn. LY can hold any value from 0 to 153, with
+// values from 144 to 153 indicating the VBlank period.
+
+func (m *Memory) LY() uint8  { return m.data[ADDR_LY] }  // Scanline Register
+func (m *Memory) LYC() uint8 { return m.data[ADDR_LYC] } // Scanline Compare Register
 
 type Block struct {
 	Offset uint16
 	Data   []byte
+}
+
+// read bit at location n
+func bit(b byte, n int) int { // 0 or 1
+	if (b & (1 << n)) > 0 {
+		return 1
+	}
+	return 0
 }

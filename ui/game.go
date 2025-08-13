@@ -14,6 +14,8 @@ import (
 	"github.com/kvalv/gameboy"
 )
 
+const CYCLES_TO_RUN = 70000 // should be approx 70k
+
 type Game struct {
 	offset int
 	cpu    *gameboy.CPU
@@ -22,7 +24,8 @@ type Game struct {
 	debugui     debugui.DebugUI
 	displayVRAM *DisplayVRAM
 
-	debugger Debugger
+	debugger       Debugger
+	cyclesPerFrame int
 
 	// reference to the screen screen
 	screen *Screen
@@ -60,15 +63,17 @@ func NewGame() *Game {
 		}
 	})
 	game := &Game{
-		displayVRAM: NewDisplayVRAM(cpu.Mem),
-		input:       NewInput(),
-		screen:      NewScreen(&cpu),
-		cpu:         &cpu,
+		displayVRAM:    NewDisplayVRAM(cpu.Mem),
+		input:          NewInput(),
+		cyclesPerFrame: 1,
+		screen:         NewScreen(&cpu),
+		cpu:            &cpu,
 	}
 
 	// "Double up" all the bits of the graphics data
 	// game.BreakPointAt(0x0095) // logo to vram routine
-	game.BreakPointAt(0x0055) // logo loaded into vram, start scrolling
+	// game.BreakPointAt(0x0055) // logo loaded into vram, start scrolling
+	// game.BreakPointAt(0x0055) // scroll logo
 
 	return game
 }
@@ -79,6 +84,7 @@ var _ ebiten.Game = (*Game)(nil)
 func (g *Game) Update() error {
 	cpu := g.cpu
 	g.input.Update()
+	// mem := cpu.Mem
 
 	if g.input.KeyQ {
 		return ebiten.Termination
@@ -89,14 +95,35 @@ func (g *Game) Update() error {
 	}
 
 	_, err := g.debugui.Update(func(ctx *debugui.Context) error {
-		ctx.Window("Debugger", image.Rect(300, 0, 450, 150), func(layout debugui.ContainerLayout) {
-			ctx.Text(g.cpu.CurrentInstr().String())
-			ctx.Checkbox(&g.debugger.Enabled, "Debug enabled").On(func() {
-				fmt.Printf("Enabled")
+		ctx.Window("Info", image.Rect(250, 10, 580, 490), func(layout debugui.ContainerLayout) {
+			ctx.Header("info", true, func() {
+				ctx.SetGridLayout([]int{-2, -1}, nil)
+
+				ctx.Text("Next instruction")
+				ctx.Text(nextInstr(cpu))
+
+				ctx.Text("TPS")
+				ctx.Text(fmt.Sprintf("%0.2f", ebiten.ActualTPS()))
 			})
+			ctx.Header("PPU Registers", false, func() {
+				ctx.SetGridLayout([]int{-2, -1}, nil)
+				ctx.Text("SCY")
+				ctx.Text(fmt.Sprintf("%#2x", g.cpu.Mem.SCY()))
+
+				ctx.Text("LY")
+				ctx.Text(fmt.Sprintf("%#2x", g.cpu.Mem.LY()))
+			})
+			ctx.Header("Debugger", false, func() {
+				ctx.SetGridLayout([]int{-2, -1}, nil)
+				ctx.Checkbox(&g.debugger.Enabled, "Debug enabled").On(func() {
+					fmt.Printf("Enabled")
+				})
+			})
+
 		})
 		return nil
 	})
+
 	if err != nil {
 		return err
 	}
@@ -114,7 +141,10 @@ func (g *Game) Update() error {
 		if !dbg.Stepped {
 			return nil
 		}
-		g.cpu.Step()
+		n0 := g.cpu.Cycles
+		for g.cpu.Cycles-n0 < CYCLES_TO_RUN {
+			g.cpu.Step()
+		}
 		g.debugger.Stepped = false
 		return nil
 	}
@@ -128,7 +158,10 @@ func (g *Game) Update() error {
 		}
 		fmt.Printf("data is now set\n")
 	} else {
-		g.cpu.Step()
+		n0 := g.cpu.Cycles
+		for g.cpu.Cycles-n0 < CYCLES_TO_RUN {
+			g.cpu.Step()
+		}
 	}
 
 	g.offset++
@@ -156,7 +189,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// vram
 	vramImage := ebiten.NewImage(g.displayVRAM.Size())
 	g.displayVRAM.Draw(vramImage)
-	drawRelative(screen, vramImage, 0.0, 0.8)
+	drawRelative(screen, vramImage, 0.01, 0.5)
 
 	// debug stuff 1
 	var b strings.Builder
@@ -171,7 +204,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 // Layout implements ebiten.Game.
 func (g *Game) Layout(outsideWidth int, outsideHeight int) (screenWidth int, screenHeight int) {
-	return 600, 400
+	return 900, 600
 }
 
 func drawRelative(container, img *ebiten.Image, dx, dy float64) {
@@ -190,4 +223,24 @@ func hexstr[V uint8 | uint16 | int | int8](v V, n ...int) string {
 		return fmt.Sprintf("%0*x", n[0], v)
 	}
 	return fmt.Sprintf("%#x", v)
+}
+
+// creates a human-readable (assembly-ish) representation of the next instruction
+func nextInstr(cpu *gameboy.CPU) string {
+	s := cpu.CurrentInstr().String()
+	if strings.HasSuffix(s, "n8") {
+		n, _ := cpu.Mem.Access(cpu.PC + 1)
+		// ADD A,0x04
+		return fmt.Sprintf("%s%s", strings.TrimSuffix(s, "n8"), hexstr(n))
+	}
+	if strings.HasSuffix(s, "n16") {
+		n := cpu.Mem.AccessU16(cpu.PC + 1)
+		// ADD A,0x04
+		return fmt.Sprintf("%s%s", strings.TrimSuffix(s, "n16"), hexstr(n))
+	}
+	if strings.Contains(s, "a8") {
+		n, _ := cpu.Mem.Access(cpu.PC + 1)
+		return strings.ReplaceAll(s, "a8", hexstr(n))
+	}
+	return s
 }

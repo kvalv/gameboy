@@ -29,8 +29,8 @@ func (s *Screen) Draw(img *ebiten.Image) {
 	// each tile is 16 bytes, and tile data1 has 4096 bytes -> 256 tiles
 	// .. so each byte in tile view 1 is just an index into one of the 256 tiles
 
-	// topLeftX := mem.SCX()
-	// topLeftY := mem.SCY()
+	topLeftX := int(mem.SCX())
+	topLeftY := int(mem.SCY())
 	// botRightX := uint8((int(mem.SCX()) + 159) % 256)
 	// botRightY := uint8((int(mem.SCY()) + 143) % 256)
 
@@ -43,7 +43,7 @@ func (s *Screen) Draw(img *ebiten.Image) {
 		for x := range 8 {
 			for y := range 8 {
 				color := tile.PixelAt(x, y, PALETTE)
-				img.Set(x0+x, y0+y, color)
+				img.Set(topLeftX+x0+x, topLeftY+y0+y, color)
 			}
 		}
 	}

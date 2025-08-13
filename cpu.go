@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"time"
+	"strconv"
 )
 
 type Register = uint8
@@ -37,6 +37,10 @@ var (
 	FLAGC Flags = 0x10 // overflow (carry)
 )
 
+const (
+	CPU_FREQUENCY = 4_194_304 // 4.2MHz
+)
+
 type CPU struct {
 	A Register     // accumulator
 	F FlagRegister // flag register
@@ -59,7 +63,7 @@ type CPU struct {
 	// whether previous command was the CB-prefix
 	prefix bool
 
-	cycles     int
+	Cycles     int
 	InstrCount int
 	limit      int
 	hooks      []func(*CPU, int, Instruction, *slog.Logger)
@@ -67,6 +71,9 @@ type CPU struct {
 
 	Mem *Memory
 	log *slog.Logger
+
+	// peripherals
+	ppu PPU
 
 	// last error from Step()
 	err error
@@ -247,6 +254,8 @@ func (cpu *CPU) Step() bool {
 	instr.Exec(cpu)
 	// log.Debug("instr done", "curr", fmt.Sprintf("%#x", cpu.PC))
 
+	cpu.ppu.Step(cpu)
+
 	return true
 }
 
@@ -264,7 +273,13 @@ func (cpu *CPU) IncProgramCounter(src ...string) {
 }
 
 func (cpu *CPU) Dump(w io.Writer) {
-	fmt.Fprintf(w, "Cycles: %d\n", cpu.cycles)
+	formatCycle := func(n int) string {
+		if n < 1000000 {
+			return strconv.Itoa(n)
+		}
+		return fmt.Sprintf("%.1fM", float64(n)/1000000)
+	}
+	fmt.Fprintf(w, "Cycles: %s\n", formatCycle(cpu.Cycles))
 	fmt.Fprintf(w, "A:  %#02x     F:  %#02x     AF: %#04x\n", cpu.A, uint8(cpu.F), cpu.AF())
 	fmt.Fprintf(w, "B:  %#02x     C:  %#02x     BC: %#04x\n", cpu.B, cpu.C, cpu.BC())
 	fmt.Fprintf(w, "D:  %#02x     E:  %#02x	  DE: %#04x\n", cpu.D, cpu.E, cpu.DE())
@@ -283,12 +298,6 @@ func (f Flags) HasHigh() bool  { return (uint8(f) & uint8(FLAGH)) > 0 }
 func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	cpu.Mem = mem
 	cpu.log = log
-
-	go func() {
-		for range time.Tick(time.Millisecond) {
-			cpu.Mem.SetLY()
-		}
-	}()
 
 	for cpu.Step() {
 	}

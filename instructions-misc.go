@@ -6,7 +6,7 @@ package gameboy
 
 // NOP     code=0x01
 func NOP_01(cpu *CPU) {
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 
 // RRCA   code=0x0F

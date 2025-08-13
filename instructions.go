@@ -14,7 +14,7 @@ type POP_D1 struct{}
 func (POP_D1) Exec(cpu *CPU) {
 	value := cpu.PopStack()
 	cpu.D, cpu.E = split(value)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (POP_D1) Code() uint8 {
 	return 0xD1
@@ -45,7 +45,7 @@ func (LD_02) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.BC(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_02) Code() uint8 {
@@ -116,7 +116,7 @@ func (INC_03) Exec(cpu *CPU) {
 	res, flags := add(cpu.BC(), 0x01)
 	cpu.F = flags
 	cpu.B, cpu.C = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (INC_03) Code() uint8 {
 	return 0x3
@@ -134,7 +134,7 @@ func (LD_41) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_41) Code() uint8 {
@@ -153,7 +153,7 @@ func (LD_48) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_48) Code() uint8 {
@@ -172,7 +172,7 @@ func (LD_7D) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_7D) Code() uint8 {
@@ -194,7 +194,7 @@ func (XOR_A9) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_A9) Code() uint8 {
 	return 0xA9
@@ -210,7 +210,7 @@ func (CP_BB) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.E)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_BB) Code() uint8 {
 	return 0xBB
@@ -241,7 +241,7 @@ func (LD_1A) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_1A) Code() uint8 {
@@ -259,7 +259,7 @@ func (SUB_92) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_92) Code() uint8 {
 	return 0x92
@@ -280,9 +280,9 @@ func (CALL_DC) Exec(cpu *CPU) {
 	if cpu.F.HasCarry() {
 		cpu.PushStack(cpu.PC)
 		cpu.PC = nn
-		cpu.cycles += 24
+		cpu.Cycles += 24
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (CALL_DC) Code() uint8 {
@@ -329,7 +329,7 @@ func (LD_70) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_70) Code() uint8 {
@@ -351,7 +351,7 @@ func (XOR_AE) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (XOR_AE) Code() uint8 {
 	return 0xAE
@@ -366,9 +366,9 @@ type RET_C8 struct{}
 func (RET_C8) Exec(cpu *CPU) {
 	if cpu.F.HasZero() {
 		cpu.PC = cpu.PopStack()
-		cpu.cycles += 20
+		cpu.Cycles += 20
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (RET_C8) Code() uint8 {
@@ -383,7 +383,7 @@ type RLCA_07 struct{}
 
 func (RLCA_07) Exec(cpu *CPU) {
 	cpu.A, cpu.F = rotate(cpu.A, 0, cpu.F, true)
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (RLCA_07) Code() uint8 {
 	return 0x7
@@ -399,7 +399,7 @@ func (RLA_17) Exec(cpu *CPU) {
 	cpu.A, cpu.F = rotate(cpu.A, 0, cpu.F, false)
 	// RLA always sets the zero flag to 0 without looking at the resulting value of the calculation.
 	cpu.F &= ^FLAGZ
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (RLA_17) Code() uint8 {
 	return 0x17
@@ -417,7 +417,7 @@ func (LD_40) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_40) Code() uint8 {
@@ -434,7 +434,7 @@ func (CP_FE) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.readU8(cpu.PC))
 	cpu.IncProgramCounter()
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (CP_FE) Code() uint8 {
 	return 0xFE
@@ -453,7 +453,7 @@ func (ADD_86) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_86) Code() uint8 {
 	return 0x86
@@ -470,7 +470,7 @@ func (SUB_96) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (SUB_96) Code() uint8 {
 	return 0x96
@@ -504,9 +504,9 @@ func (CALL_D4) Exec(cpu *CPU) {
 	if !cpu.F.HasCarry() {
 		cpu.PushStack(cpu.PC)
 		cpu.PC = nn
-		cpu.cycles += 24
+		cpu.Cycles += 24
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (CALL_D4) Code() uint8 {
@@ -539,7 +539,7 @@ func (ADD_09) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_09) Code() uint8 {
 	return 0x9
@@ -555,7 +555,7 @@ func (INC_0C) Exec(cpu *CPU) {
 	res, flags := add(cpu.C, 0x01)
 	cpu.F = flags
 	cpu.C = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_0C) Code() uint8 {
 	return 0xC
@@ -571,7 +571,7 @@ func (INC_3C) Exec(cpu *CPU) {
 	res, flags := add(cpu.A, 0x01)
 	cpu.F = flags
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_3C) Code() uint8 {
 	return 0x3C
@@ -589,7 +589,7 @@ func (LD_64) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_64) Code() uint8 {
@@ -647,7 +647,7 @@ func (LD_52) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_52) Code() uint8 {
@@ -669,9 +669,9 @@ func (CALL_C4) Exec(cpu *CPU) {
 	if !cpu.F.HasZero() {
 		cpu.PushStack(cpu.PC)
 		cpu.PC = nn
-		cpu.cycles += 24
+		cpu.Cycles += 24
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (CALL_C4) Code() uint8 {
@@ -687,9 +687,9 @@ type RET_D8 struct{}
 func (RET_D8) Exec(cpu *CPU) {
 	if cpu.F.HasCarry() {
 		cpu.PC = cpu.PopStack()
-		cpu.cycles += 20
+		cpu.Cycles += 20
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (RET_D8) Code() uint8 {
@@ -723,7 +723,7 @@ func (LD_01) Exec(cpu *CPU) {
 
 	cpu.B, cpu.C = split(data)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_01) Code() uint8 {
@@ -740,7 +740,7 @@ func (INC_24) Exec(cpu *CPU) {
 	res, flags := add(cpu.H, 0x01)
 	cpu.F = flags
 	cpu.H = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_24) Code() uint8 {
 	return 0x24
@@ -757,7 +757,7 @@ func (SUB_90) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_90) Code() uint8 {
 	return 0x90
@@ -772,7 +772,7 @@ type POP_C1 struct{}
 func (POP_C1) Exec(cpu *CPU) {
 	value := cpu.PopStack()
 	cpu.B, cpu.C = split(value)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (POP_C1) Code() uint8 {
 	return 0xC1
@@ -807,7 +807,7 @@ func (ADD_E8) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.SP = res
 	cpu.F = flags
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (ADD_E8) Code() uint8 {
 	return 0xE8
@@ -838,7 +838,7 @@ func (LDH_F0) Exec(cpu *CPU) {
 	cpu.A = value
 	cpu.IncProgramCounter()
 	cpu.PC = pc0 + 1
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (LDH_F0) Code() uint8 {
 	return 0xF0
@@ -854,7 +854,7 @@ func (DEC_35) Exec(cpu *CPU) {
 	res, flags := sub(cpu.loadU8(cpu.HL()), 0x01)
 	cpu.F = flags
 	cpu.WriteMemory(cpu.HL(), res)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (DEC_35) Code() uint8 {
 	return 0x35
@@ -872,7 +872,7 @@ func (LD_72) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_72) Code() uint8 {
@@ -945,7 +945,7 @@ func (LD_08) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	cpu.IncProgramCounter()
 
-	cpu.cycles += 20
+	cpu.Cycles += 20
 
 }
 func (LD_08) Code() uint8 {
@@ -962,7 +962,7 @@ func (INC_13) Exec(cpu *CPU) {
 	res, flags := add(cpu.DE(), 0x01)
 	cpu.F = flags
 	cpu.D, cpu.E = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (INC_13) Code() uint8 {
 	return 0x13
@@ -980,7 +980,7 @@ func (LD_0A) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_0A) Code() uint8 {
@@ -1000,7 +1000,7 @@ func (LD_0E) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_0E) Code() uint8 {
@@ -1030,7 +1030,7 @@ func (DEC_2B) Exec(cpu *CPU) {
 	res, flags := sub(cpu.HL(), 0x01)
 	cpu.F = flags
 	cpu.H, cpu.L = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (DEC_2B) Code() uint8 {
 	return 0x2B
@@ -1048,7 +1048,7 @@ func (LD_3A) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_3A) Code() uint8 {
@@ -1067,7 +1067,7 @@ func (LD_4D) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_4D) Code() uint8 {
@@ -1101,7 +1101,7 @@ func (LD_21) Exec(cpu *CPU) {
 
 	cpu.H, cpu.L = split(data)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_21) Code() uint8 {
@@ -1121,7 +1121,7 @@ func (LD_26) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_26) Code() uint8 {
@@ -1141,7 +1141,7 @@ func (ADD_87) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_87) Code() uint8 {
 	return 0x87
@@ -1157,7 +1157,7 @@ func (CP_B9) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.C)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_B9) Code() uint8 {
 	return 0xB9
@@ -1173,7 +1173,7 @@ func (CP_BE) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.loadU8(cpu.HL()))
 
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (CP_BE) Code() uint8 {
 	return 0xBE
@@ -1206,7 +1206,7 @@ func (LD_5A) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_5A) Code() uint8 {
@@ -1237,9 +1237,9 @@ func (JR_20) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	if !cpu.F.HasZero() {
 		cpu.PC, cpu.F = add(cpu.PC, e)
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (JR_20) Code() uint8 {
@@ -1258,7 +1258,7 @@ func (LD_4C) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_4C) Code() uint8 {
@@ -1281,7 +1281,7 @@ func (LD_32) Exec(cpu *CPU) {
 	cpu.H, cpu.L = split(decr)
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_32) Code() uint8 {
@@ -1298,7 +1298,7 @@ func (INC_34) Exec(cpu *CPU) {
 	res, flags := add(cpu.loadU8(cpu.HL()), 0x01)
 	cpu.F = flags
 	cpu.WriteMemory(cpu.HL(), res)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (INC_34) Code() uint8 {
 	return 0x34
@@ -1316,7 +1316,7 @@ func (LDH_E0) Exec(cpu *CPU) {
 	cpu.WriteMemory(concatU16(0xFF, cpu.readU8(cpu.PC)), value)
 
 	cpu.PC = pc0 + 1
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (LDH_E0) Code() uint8 {
 	return 0xE0
@@ -1334,7 +1334,7 @@ func (LDH_F2) Exec(cpu *CPU) {
 	cpu.A = value
 
 	cpu.PC = pc0 + 1
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (LDH_F2) Code() uint8 {
 	return 0xF2
@@ -1351,9 +1351,9 @@ func (JR_30) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	if !cpu.F.HasCarry() {
 		cpu.PC, cpu.F = add(cpu.PC, e)
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (JR_30) Code() uint8 {
@@ -1372,7 +1372,7 @@ func (LD_63) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_63) Code() uint8 {
@@ -1417,7 +1417,7 @@ func (LD_6B) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_6B) Code() uint8 {
@@ -1434,7 +1434,7 @@ func (INC_33) Exec(cpu *CPU) {
 	res, flags := add(cpu.SP, 0x01)
 	cpu.F = flags
 	cpu.SP = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (INC_33) Code() uint8 {
 	return 0x33
@@ -1452,7 +1452,7 @@ func (LD_51) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_51) Code() uint8 {
@@ -1485,7 +1485,7 @@ func (ADD_81) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_81) Code() uint8 {
 	return 0x81
@@ -1504,7 +1504,7 @@ func (ADD_82) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_82) Code() uint8 {
 	return 0x82
@@ -1522,7 +1522,7 @@ func (LD_42) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_42) Code() uint8 {
@@ -1541,7 +1541,7 @@ func (LD_4E) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_4E) Code() uint8 {
@@ -1560,7 +1560,7 @@ func (LD_74) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_74) Code() uint8 {
@@ -1590,7 +1590,7 @@ func (INC_04) Exec(cpu *CPU) {
 	res, flags := add(cpu.B, 0x01)
 	cpu.F = flags
 	cpu.B = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_04) Code() uint8 {
 	return 0x4
@@ -1608,7 +1608,7 @@ func (LD_77) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_77) Code() uint8 {
@@ -1630,7 +1630,7 @@ func (XOR_AB) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_AB) Code() uint8 {
 	return 0xAB
@@ -1646,7 +1646,7 @@ func (CP_B8) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.B)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_B8) Code() uint8 {
 	return 0xB8
@@ -1661,9 +1661,9 @@ type RET_D0 struct{}
 func (RET_D0) Exec(cpu *CPU) {
 	if !cpu.F.HasCarry() {
 		cpu.PC = cpu.PopStack()
-		cpu.cycles += 20
+		cpu.Cycles += 20
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (RET_D0) Code() uint8 {
@@ -1684,7 +1684,7 @@ func (OR_B1) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B1) Code() uint8 {
 	return 0xB1
@@ -1702,7 +1702,7 @@ func (LD_6C) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_6C) Code() uint8 {
@@ -1719,7 +1719,7 @@ func (DEC_2D) Exec(cpu *CPU) {
 	res, flags := sub(cpu.L, 0x01)
 	cpu.F = flags
 	cpu.L = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_2D) Code() uint8 {
 	return 0x2D
@@ -1737,7 +1737,7 @@ func (LD_50) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_50) Code() uint8 {
@@ -1756,7 +1756,7 @@ func (LD_7F) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_7F) Code() uint8 {
@@ -1774,7 +1774,7 @@ func (SUB_95) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_95) Code() uint8 {
 	return 0x95
@@ -1821,7 +1821,7 @@ func (XOR_AA) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_AA) Code() uint8 {
 	return 0xAA
@@ -1840,7 +1840,7 @@ func (LD_1E) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_1E) Code() uint8 {
@@ -1858,9 +1858,9 @@ func (JR_38) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	if cpu.F.HasCarry() {
 		cpu.PC, cpu.F = add(cpu.PC, e)
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (JR_38) Code() uint8 {
@@ -1879,7 +1879,7 @@ func (LD_60) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_60) Code() uint8 {
@@ -1899,7 +1899,7 @@ func (ADD_85) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_85) Code() uint8 {
 	return 0x85
@@ -1913,7 +1913,7 @@ type PUSH_C5 struct{}
 
 func (PUSH_C5) Exec(cpu *CPU) {
 	cpu.PushStack(cpu.BC())
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (PUSH_C5) Code() uint8 {
 	return 0xC5
@@ -1927,7 +1927,7 @@ type PUSH_D5 struct{}
 
 func (PUSH_D5) Exec(cpu *CPU) {
 	cpu.PushStack(cpu.DE())
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (PUSH_D5) Code() uint8 {
 	return 0xD5
@@ -1961,7 +1961,7 @@ func (LD_06) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_06) Code() uint8 {
@@ -1978,7 +1978,7 @@ func (DEC_1D) Exec(cpu *CPU) {
 	res, flags := sub(cpu.E, 0x01)
 	cpu.F = flags
 	cpu.E = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_1D) Code() uint8 {
 	return 0x1D
@@ -1994,7 +1994,7 @@ func (DEC_3B) Exec(cpu *CPU) {
 	res, flags := sub(cpu.SP, 0x01)
 	cpu.F = flags
 	cpu.SP = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (DEC_3B) Code() uint8 {
 	return 0x3B
@@ -2012,7 +2012,7 @@ func (LD_6D) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_6D) Code() uint8 {
@@ -2068,7 +2068,7 @@ func (INC_23) Exec(cpu *CPU) {
 	res, flags := add(cpu.HL(), 0x01)
 	cpu.F = flags
 	cpu.H, cpu.L = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (INC_23) Code() uint8 {
 	return 0x23
@@ -2088,7 +2088,7 @@ func (LD_31) Exec(cpu *CPU) {
 
 	cpu.SP = data
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_31) Code() uint8 {
@@ -2108,7 +2108,7 @@ func (ADD_39) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_39) Code() uint8 {
 	return 0x39
@@ -2126,7 +2126,7 @@ func (LD_4A) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_4A) Code() uint8 {
@@ -2145,7 +2145,7 @@ func (LD_55) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_55) Code() uint8 {
@@ -2164,7 +2164,7 @@ func (LD_5B) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_5B) Code() uint8 {
@@ -2182,7 +2182,7 @@ func (SUB_91) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_91) Code() uint8 {
 	return 0x91
@@ -2199,7 +2199,7 @@ func (SUB_94) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_94) Code() uint8 {
 	return 0x94
@@ -2215,7 +2215,7 @@ func (DEC_3D) Exec(cpu *CPU) {
 	res, flags := sub(cpu.A, 0x01)
 	cpu.F = flags
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_3D) Code() uint8 {
 	return 0x3D
@@ -2233,7 +2233,7 @@ func (LD_57) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_57) Code() uint8 {
@@ -2252,7 +2252,7 @@ func (LD_6A) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_6A) Code() uint8 {
@@ -2282,7 +2282,7 @@ func (CP_BF) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.A)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_BF) Code() uint8 {
 	return 0xBF
@@ -2303,9 +2303,9 @@ func (CALL_CD) Exec(cpu *CPU) {
 	if true {
 		cpu.PushStack(cpu.PC)
 		cpu.PC = nn
-		cpu.cycles += 24
+		cpu.Cycles += 24
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (CALL_CD) Code() uint8 {
@@ -2337,7 +2337,7 @@ func (LD_47) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_47) Code() uint8 {
@@ -2386,7 +2386,7 @@ func (OR_F6) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (OR_F6) Code() uint8 {
 	return 0xF6
@@ -2406,7 +2406,7 @@ func (LD_FA) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 
 }
 func (LD_FA) Code() uint8 {
@@ -2425,7 +2425,7 @@ func (LD_79) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_79) Code() uint8 {
@@ -2457,7 +2457,7 @@ func (LD_7B) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_7B) Code() uint8 {
@@ -2490,7 +2490,7 @@ func (LD_F8) Exec(cpu *CPU) {
 	res, flags := add(cpu.SP, e)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_F8) Code() uint8 {
@@ -2507,7 +2507,7 @@ func (INC_14) Exec(cpu *CPU) {
 	res, flags := add(cpu.D, 0x01)
 	cpu.F = flags
 	cpu.D = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_14) Code() uint8 {
 	return 0x14
@@ -2525,7 +2525,7 @@ func (LD_44) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_44) Code() uint8 {
@@ -2544,7 +2544,7 @@ func (LD_7E) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_7E) Code() uint8 {
@@ -2559,7 +2559,7 @@ type PREFIX_CB struct{}
 
 func (PREFIX_CB) Exec(cpu *CPU) {
 	cpu.prefix = true
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (PREFIX_CB) Code() uint8 {
 	return 0xCB
@@ -2572,7 +2572,7 @@ func (PREFIX_CB) String() string {
 type NOP_00 struct{}
 
 func (NOP_00) Exec(cpu *CPU) {
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (NOP_00) Code() uint8 {
 	return 0x0
@@ -2590,7 +2590,7 @@ func (LD_54) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_54) Code() uint8 {
@@ -2609,7 +2609,7 @@ func (LD_59) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_59) Code() uint8 {
@@ -2642,7 +2642,7 @@ func (LD_36) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_36) Code() uint8 {
@@ -2661,7 +2661,7 @@ func (LD_75) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_75) Code() uint8 {
@@ -2683,7 +2683,7 @@ func (XOR_AC) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_AC) Code() uint8 {
 	return 0xAC
@@ -2700,7 +2700,7 @@ func (SUB_D6) Exec(cpu *CPU) {
 	cpu.A = res
 	cpu.IncProgramCounter()
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (SUB_D6) Code() uint8 {
 	return 0xD6
@@ -2716,7 +2716,7 @@ func (INC_2C) Exec(cpu *CPU) {
 	res, flags := add(cpu.L, 0x01)
 	cpu.F = flags
 	cpu.L = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_2C) Code() uint8 {
 	return 0x2C
@@ -2737,7 +2737,7 @@ func (XOR_AD) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_AD) Code() uint8 {
 	return 0xAD
@@ -2767,9 +2767,9 @@ func (JR_28) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	if cpu.F.HasZero() {
 		cpu.PC, cpu.F = add(cpu.PC, e)
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (JR_28) Code() uint8 {
@@ -2788,7 +2788,7 @@ func (LD_58) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_58) Code() uint8 {
@@ -2833,7 +2833,7 @@ func (LD_5D) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_5D) Code() uint8 {
@@ -2852,7 +2852,7 @@ func (LD_67) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_67) Code() uint8 {
@@ -2872,7 +2872,7 @@ func (ADD_80) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_80) Code() uint8 {
 	return 0x80
@@ -2890,7 +2890,7 @@ func (LDH_E2) Exec(cpu *CPU) {
 	cpu.WriteMemory(concatU16(0xFF, cpu.C), value)
 
 	cpu.PC = pc0 + 1
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (LDH_E2) Code() uint8 {
 	return 0xE2
@@ -2923,7 +2923,7 @@ func (LD_4F) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_4F) Code() uint8 {
@@ -2940,7 +2940,7 @@ func (POP_F1) Exec(cpu *CPU) {
 	value := cpu.PopStack()
 	msb, lsb := split(value)
 	cpu.A, cpu.F = msb, FlagRegister(lsb)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (POP_F1) Code() uint8 {
 	return 0xF1
@@ -2956,7 +2956,7 @@ func (DEC_15) Exec(cpu *CPU) {
 	res, flags := sub(cpu.D, 0x01)
 	cpu.F = flags
 	cpu.D = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_15) Code() uint8 {
 	return 0x15
@@ -2974,7 +2974,7 @@ func (LD_65) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_65) Code() uint8 {
@@ -2993,7 +2993,7 @@ func (LD_68) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_68) Code() uint8 {
@@ -3012,7 +3012,7 @@ func (LD_5C) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_5C) Code() uint8 {
@@ -3032,7 +3032,7 @@ func (ADD_84) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_84) Code() uint8 {
 	return 0x84
@@ -3065,7 +3065,7 @@ func (OR_B7) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B7) Code() uint8 {
 	return 0xB7
@@ -3080,9 +3080,9 @@ type RET_C9 struct{}
 func (RET_C9) Exec(cpu *CPU) {
 	if true {
 		cpu.PC = cpu.PopStack()
-		cpu.cycles += 16
+		cpu.Cycles += 16
 	} else {
-		cpu.cycles += 16
+		cpu.Cycles += 16
 	}
 }
 func (RET_C9) Code() uint8 {
@@ -3097,7 +3097,7 @@ type PUSH_E5 struct{}
 
 func (PUSH_E5) Exec(cpu *CPU) {
 	cpu.PushStack(cpu.HL())
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (PUSH_E5) Code() uint8 {
 	return 0xE5
@@ -3115,7 +3115,7 @@ func (LD_F9) Exec(cpu *CPU) {
 
 	cpu.SP = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_F9) Code() uint8 {
@@ -3132,7 +3132,7 @@ func (INC_1C) Exec(cpu *CPU) {
 	res, flags := add(cpu.E, 0x01)
 	cpu.F = flags
 	cpu.E = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (INC_1C) Code() uint8 {
 	return 0x1C
@@ -3154,7 +3154,7 @@ func (LD_22) Exec(cpu *CPU) {
 	cpu.H, cpu.L = split(incr)
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_22) Code() uint8 {
@@ -3175,7 +3175,7 @@ func (OR_B6) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (OR_B6) Code() uint8 {
 	return 0xB6
@@ -3202,7 +3202,7 @@ type PUSH_F5 struct{}
 
 func (PUSH_F5) Exec(cpu *CPU) {
 	cpu.PushStack(cpu.AF())
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (PUSH_F5) Code() uint8 {
 	return 0xF5
@@ -3221,7 +3221,7 @@ func (ADD_83) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (ADD_83) Code() uint8 {
 	return 0x83
@@ -3236,7 +3236,7 @@ type POP_E1 struct{}
 func (POP_E1) Exec(cpu *CPU) {
 	value := cpu.PopStack()
 	cpu.H, cpu.L = split(value)
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (POP_E1) Code() uint8 {
 	return 0xE1
@@ -3254,7 +3254,7 @@ func (LD_53) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_53) Code() uint8 {
@@ -3272,7 +3272,7 @@ func (SUB_93) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_93) Code() uint8 {
 	return 0x93
@@ -3292,7 +3292,7 @@ func (OR_B2) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B2) Code() uint8 {
 	return 0xB2
@@ -3311,7 +3311,7 @@ func (LD_16) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_16) Code() uint8 {
@@ -3328,7 +3328,7 @@ func (DEC_1B) Exec(cpu *CPU) {
 	res, flags := sub(cpu.DE(), 0x01)
 	cpu.F = flags
 	cpu.D, cpu.E = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (DEC_1B) Code() uint8 {
 	return 0x1B
@@ -3347,7 +3347,7 @@ func (ADD_29) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_29) Code() uint8 {
 	return 0x29
@@ -3365,7 +3365,7 @@ func (LD_2A) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_2A) Code() uint8 {
@@ -3384,7 +3384,7 @@ func (LD_49) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_49) Code() uint8 {
@@ -3403,7 +3403,7 @@ func (LD_61) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_61) Code() uint8 {
@@ -3451,7 +3451,7 @@ func (XOR_AF) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_AF) Code() uint8 {
 	return 0xAF
@@ -3484,7 +3484,7 @@ func (LD_12) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.DE(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_12) Code() uint8 {
@@ -3501,7 +3501,7 @@ func (DEC_25) Exec(cpu *CPU) {
 	res, flags := sub(cpu.H, 0x01)
 	cpu.F = flags
 	cpu.H = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_25) Code() uint8 {
 	return 0x25
@@ -3522,7 +3522,7 @@ func (XOR_A8) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (XOR_A8) Code() uint8 {
 	return 0xA8
@@ -3553,7 +3553,7 @@ func (LD_45) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_45) Code() uint8 {
@@ -3572,7 +3572,7 @@ func (LD_71) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_71) Code() uint8 {
@@ -3591,7 +3591,7 @@ func (LD_7A) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_7A) Code() uint8 {
@@ -3612,7 +3612,7 @@ func (ADD_C6) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.A = res
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_C6) Code() uint8 {
 	return 0xC6
@@ -3628,7 +3628,7 @@ func (CP_BA) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.D)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_BA) Code() uint8 {
 	return 0xBA
@@ -3673,7 +3673,7 @@ func (LD_3E) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_3E) Code() uint8 {
@@ -3692,7 +3692,7 @@ func (LD_43) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_43) Code() uint8 {
@@ -3711,7 +3711,7 @@ func (LD_5F) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_5F) Code() uint8 {
@@ -3730,7 +3730,7 @@ func (LD_69) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_69) Code() uint8 {
@@ -3749,7 +3749,7 @@ func (LD_6F) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_6F) Code() uint8 {
@@ -3767,7 +3767,7 @@ func (SUB_97) Exec(cpu *CPU) {
 	cpu.A = res
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (SUB_97) Code() uint8 {
 	return 0x97
@@ -3783,7 +3783,7 @@ func (CP_BC) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.H)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_BC) Code() uint8 {
 	return 0xBC
@@ -3810,7 +3810,7 @@ type RRA_1F struct{}
 
 func (RRA_1F) Exec(cpu *CPU) {
 	cpu.A, cpu.F = rotate(cpu.A, 1, cpu.F, false)
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (RRA_1F) Code() uint8 {
 	return 0x1F
@@ -3828,7 +3828,7 @@ func (LD_4B) Exec(cpu *CPU) {
 
 	cpu.C = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_4B) Code() uint8 {
@@ -3845,7 +3845,7 @@ func (DEC_0B) Exec(cpu *CPU) {
 	res, flags := sub(cpu.BC(), 0x01)
 	cpu.F = flags
 	cpu.B, cpu.C = split(res)
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (DEC_0B) Code() uint8 {
 	return 0xB
@@ -3859,7 +3859,7 @@ type STOP_10 struct{}
 
 func (STOP_10) Exec(cpu *CPU) {
 	cpu.err = ErrNoMoreInstructions
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (STOP_10) Code() uint8 {
 	return 0x10
@@ -3879,7 +3879,7 @@ func (LD_11) Exec(cpu *CPU) {
 
 	cpu.D, cpu.E = split(data)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 
 }
 func (LD_11) Code() uint8 {
@@ -3898,7 +3898,7 @@ func (LD_46) Exec(cpu *CPU) {
 
 	cpu.B = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_46) Code() uint8 {
@@ -3919,7 +3919,7 @@ func (LD_EA) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	cpu.IncProgramCounter()
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 
 }
 func (LD_EA) Code() uint8 {
@@ -3953,7 +3953,7 @@ func (OR_B5) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B5) Code() uint8 {
 	return 0xB5
@@ -3970,9 +3970,9 @@ func (JR_18) Exec(cpu *CPU) {
 	cpu.IncProgramCounter()
 	if true {
 		cpu.PC, cpu.F = add(cpu.PC, e)
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (JR_18) Code() uint8 {
@@ -3992,7 +3992,7 @@ func (ADD_19) Exec(cpu *CPU) {
 	res, flags := add(lhs, rhs)
 	cpu.H, cpu.L = split(res)
 	cpu.F = flags
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (ADD_19) Code() uint8 {
 	return 0x19
@@ -4023,7 +4023,7 @@ func (LD_5E) Exec(cpu *CPU) {
 
 	cpu.E = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_5E) Code() uint8 {
@@ -4045,9 +4045,9 @@ func (CALL_CC) Exec(cpu *CPU) {
 	if cpu.F.HasZero() {
 		cpu.PushStack(cpu.PC)
 		cpu.PC = nn
-		cpu.cycles += 24
+		cpu.Cycles += 24
 	} else {
-		cpu.cycles += 12
+		cpu.Cycles += 12
 	}
 }
 func (CALL_CC) Code() uint8 {
@@ -4069,7 +4069,7 @@ func (XOR_EE) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (XOR_EE) Code() uint8 {
 	return 0xEE
@@ -4087,7 +4087,7 @@ func (LD_62) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_62) Code() uint8 {
@@ -4117,7 +4117,7 @@ func (CP_BD) Exec(cpu *CPU) {
 	_, flags := sub(cpu.A, cpu.L)
 
 	cpu.F = flags
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (CP_BD) Code() uint8 {
 	return 0xBD
@@ -4133,7 +4133,7 @@ func (DEC_05) Exec(cpu *CPU) {
 	res, flags := sub(cpu.B, 0x01)
 	cpu.F = flags
 	cpu.B = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_05) Code() uint8 {
 	return 0x5
@@ -4153,7 +4153,7 @@ func (OR_B3) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B3) Code() uint8 {
 	return 0xB3
@@ -4169,7 +4169,7 @@ func (DEC_0D) Exec(cpu *CPU) {
 	res, flags := sub(cpu.C, 0x01)
 	cpu.F = flags
 	cpu.C = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (DEC_0D) Code() uint8 {
 	return 0xD
@@ -4187,7 +4187,7 @@ func (LD_56) Exec(cpu *CPU) {
 
 	cpu.D = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_56) Code() uint8 {
@@ -4208,7 +4208,7 @@ func (OR_B0) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B0) Code() uint8 {
 	return 0xB0
@@ -4240,7 +4240,7 @@ func (LD_2E) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_2E) Code() uint8 {
@@ -4259,7 +4259,7 @@ func (LD_6E) Exec(cpu *CPU) {
 
 	cpu.L = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_6E) Code() uint8 {
@@ -4278,7 +4278,7 @@ func (LD_73) Exec(cpu *CPU) {
 
 	cpu.WriteMemory(cpu.HL(), data)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_73) Code() uint8 {
@@ -4297,7 +4297,7 @@ func (LD_78) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_78) Code() uint8 {
@@ -4316,7 +4316,7 @@ func (LD_7C) Exec(cpu *CPU) {
 
 	cpu.A = data
 
-	cpu.cycles += 4
+	cpu.Cycles += 4
 
 }
 func (LD_7C) Code() uint8 {
@@ -4350,7 +4350,7 @@ func (OR_B4) Exec(cpu *CPU) {
 	}
 	cpu.F = FlagRegister(flags)
 	cpu.A = res
-	cpu.cycles += 4
+	cpu.Cycles += 4
 }
 func (OR_B4) Code() uint8 {
 	return 0xB4
@@ -4365,9 +4365,9 @@ type RET_C0 struct{}
 func (RET_C0) Exec(cpu *CPU) {
 	if !cpu.F.HasZero() {
 		cpu.PC = cpu.PopStack()
-		cpu.cycles += 20
+		cpu.Cycles += 20
 	} else {
-		cpu.cycles += 8
+		cpu.Cycles += 8
 	}
 }
 func (RET_C0) Code() uint8 {
@@ -4386,7 +4386,7 @@ func (LD_66) Exec(cpu *CPU) {
 
 	cpu.H = data
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 
 }
 func (LD_66) Code() uint8 {
@@ -4486,7 +4486,7 @@ func (BIT_5A) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_5A) Code() uint8 {
 	return 0x5A
@@ -4529,7 +4529,7 @@ func (RR_1F) Exec(cpu *CPU) {
 	cpu.A = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_1F) Code() uint8 {
 	return 0x1F
@@ -4550,7 +4550,7 @@ func (BIT_56) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_56) Code() uint8 {
 	return 0x56
@@ -4658,7 +4658,7 @@ func (RL_11) Exec(cpu *CPU) {
 	cpu.C = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_11) Code() uint8 {
 	return 0x11
@@ -4705,7 +4705,7 @@ func (BIT_64) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_64) Code() uint8 {
 	return 0x64
@@ -4748,7 +4748,7 @@ func (RLC_06) Exec(cpu *CPU) {
 	cpu.WriteMemory(cpu.HL(), res)
 	cpu.F = flags
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (RLC_06) Code() uint8 {
 	return 0x6
@@ -4769,7 +4769,7 @@ func (BIT_41) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_41) Code() uint8 {
 	return 0x41
@@ -4790,7 +4790,7 @@ func (BIT_53) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_53) Code() uint8 {
 	return 0x53
@@ -4811,7 +4811,7 @@ func (BIT_67) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_67) Code() uint8 {
 	return 0x67
@@ -4832,7 +4832,7 @@ func (BIT_77) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_77) Code() uint8 {
 	return 0x77
@@ -4888,7 +4888,7 @@ func (RL_12) Exec(cpu *CPU) {
 	cpu.D = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_12) Code() uint8 {
 	return 0x12
@@ -4909,7 +4909,7 @@ func (BIT_50) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_50) Code() uint8 {
 	return 0x50
@@ -5021,7 +5021,7 @@ func (BIT_55) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_55) Code() uint8 {
 	return 0x55
@@ -5042,7 +5042,7 @@ func (BIT_65) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_65) Code() uint8 {
 	return 0x65
@@ -5063,7 +5063,7 @@ func (BIT_6C) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_6C) Code() uint8 {
 	return 0x6C
@@ -5084,7 +5084,7 @@ func (BIT_7C) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_7C) Code() uint8 {
 	return 0x7C
@@ -5127,7 +5127,7 @@ func (RRC_0C) Exec(cpu *CPU) {
 	cpu.H = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_0C) Code() uint8 {
 	return 0xC
@@ -5144,7 +5144,7 @@ func (RR_1C) Exec(cpu *CPU) {
 	cpu.H = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_1C) Code() uint8 {
 	return 0x1C
@@ -5165,7 +5165,7 @@ func (BIT_5C) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_5C) Code() uint8 {
 	return 0x5C
@@ -5238,7 +5238,7 @@ func (BIT_6D) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_6D) Code() uint8 {
 	return 0x6D
@@ -5324,7 +5324,7 @@ func (BIT_4A) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_4A) Code() uint8 {
 	return 0x4A
@@ -5367,7 +5367,7 @@ func (RRC_09) Exec(cpu *CPU) {
 	cpu.C = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_09) Code() uint8 {
 	return 0x9
@@ -5401,7 +5401,7 @@ func (BIT_5E) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_5E) Code() uint8 {
 	return 0x5E
@@ -5422,7 +5422,7 @@ func (BIT_62) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_62) Code() uint8 {
 	return 0x62
@@ -5469,7 +5469,7 @@ func (BIT_60) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_60) Code() uint8 {
 	return 0x60
@@ -5490,7 +5490,7 @@ func (BIT_7F) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_7F) Code() uint8 {
 	return 0x7F
@@ -5546,7 +5546,7 @@ func (RR_1B) Exec(cpu *CPU) {
 	cpu.E = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_1B) Code() uint8 {
 	return 0x1B
@@ -5606,7 +5606,7 @@ func (BIT_6A) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_6A) Code() uint8 {
 	return 0x6A
@@ -5623,7 +5623,7 @@ func (RR_1D) Exec(cpu *CPU) {
 	cpu.L = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_1D) Code() uint8 {
 	return 0x1D
@@ -5644,7 +5644,7 @@ func (BIT_59) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_59) Code() uint8 {
 	return 0x59
@@ -5665,7 +5665,7 @@ func (BIT_5B) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_5B) Code() uint8 {
 	return 0x5B
@@ -5686,7 +5686,7 @@ func (BIT_75) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_75) Code() uint8 {
 	return 0x75
@@ -5729,7 +5729,7 @@ func (RLC_05) Exec(cpu *CPU) {
 	cpu.L = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_05) Code() uint8 {
 	return 0x5
@@ -5863,7 +5863,7 @@ func (RRC_0D) Exec(cpu *CPU) {
 	cpu.L = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_0D) Code() uint8 {
 	return 0xD
@@ -5884,7 +5884,7 @@ func (BIT_40) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_40) Code() uint8 {
 	return 0x40
@@ -5905,7 +5905,7 @@ func (BIT_44) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_44) Code() uint8 {
 	return 0x44
@@ -5935,7 +5935,7 @@ func (RRC_08) Exec(cpu *CPU) {
 	cpu.B = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_08) Code() uint8 {
 	return 0x8
@@ -5956,7 +5956,7 @@ func (BIT_66) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_66) Code() uint8 {
 	return 0x66
@@ -5977,7 +5977,7 @@ func (BIT_6F) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_6F) Code() uint8 {
 	return 0x6F
@@ -6007,7 +6007,7 @@ func (RRC_0B) Exec(cpu *CPU) {
 	cpu.E = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_0B) Code() uint8 {
 	return 0xB
@@ -6028,7 +6028,7 @@ func (BIT_63) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_63) Code() uint8 {
 	return 0x63
@@ -6049,7 +6049,7 @@ func (BIT_54) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_54) Code() uint8 {
 	return 0x54
@@ -6118,7 +6118,7 @@ func (RLC_02) Exec(cpu *CPU) {
 	cpu.D = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_02) Code() uint8 {
 	return 0x2
@@ -6152,7 +6152,7 @@ func (BIT_6E) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_6E) Code() uint8 {
 	return 0x6E
@@ -6221,7 +6221,7 @@ func (RLC_00) Exec(cpu *CPU) {
 	cpu.B = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_00) Code() uint8 {
 	return 0x0
@@ -6307,7 +6307,7 @@ func (BIT_5D) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_5D) Code() uint8 {
 	return 0x5D
@@ -6328,7 +6328,7 @@ func (BIT_73) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_73) Code() uint8 {
 	return 0x73
@@ -6349,7 +6349,7 @@ func (BIT_7B) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_7B) Code() uint8 {
 	return 0x7B
@@ -6366,7 +6366,7 @@ func (RL_14) Exec(cpu *CPU) {
 	cpu.H = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_14) Code() uint8 {
 	return 0x14
@@ -6387,7 +6387,7 @@ func (BIT_47) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_47) Code() uint8 {
 	return 0x47
@@ -6408,7 +6408,7 @@ func (BIT_7D) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_7D) Code() uint8 {
 	return 0x7D
@@ -6425,7 +6425,7 @@ func (RLC_04) Exec(cpu *CPU) {
 	cpu.H = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_04) Code() uint8 {
 	return 0x4
@@ -6472,7 +6472,7 @@ func (BIT_78) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_78) Code() uint8 {
 	return 0x78
@@ -6515,7 +6515,7 @@ func (RRC_0F) Exec(cpu *CPU) {
 	cpu.A = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_0F) Code() uint8 {
 	return 0xF
@@ -6532,7 +6532,7 @@ func (RL_10) Exec(cpu *CPU) {
 	cpu.B = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_10) Code() uint8 {
 	return 0x10
@@ -6549,7 +6549,7 @@ func (RR_1E) Exec(cpu *CPU) {
 	cpu.WriteMemory(cpu.HL(), res)
 	cpu.F = flags
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (RR_1E) Code() uint8 {
 	return 0x1E
@@ -6635,7 +6635,7 @@ func (BIT_69) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_69) Code() uint8 {
 	return 0x69
@@ -6682,7 +6682,7 @@ func (BIT_45) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_45) Code() uint8 {
 	return 0x45
@@ -6742,7 +6742,7 @@ func (BIT_79) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_79) Code() uint8 {
 	return 0x79
@@ -6802,7 +6802,7 @@ func (BIT_43) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_43) Code() uint8 {
 	return 0x43
@@ -6823,7 +6823,7 @@ func (BIT_49) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_49) Code() uint8 {
 	return 0x49
@@ -6844,7 +6844,7 @@ func (BIT_6B) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_6B) Code() uint8 {
 	return 0x6B
@@ -6913,7 +6913,7 @@ func (RR_19) Exec(cpu *CPU) {
 	cpu.C = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_19) Code() uint8 {
 	return 0x19
@@ -6934,7 +6934,7 @@ func (BIT_70) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_70) Code() uint8 {
 	return 0x70
@@ -7046,7 +7046,7 @@ func (BIT_76) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_76) Code() uint8 {
 	return 0x76
@@ -7093,7 +7093,7 @@ func (BIT_61) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_61) Code() uint8 {
 	return 0x61
@@ -7114,7 +7114,7 @@ func (BIT_68) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_68) Code() uint8 {
 	return 0x68
@@ -7196,7 +7196,7 @@ func (RLC_07) Exec(cpu *CPU) {
 	cpu.A = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_07) Code() uint8 {
 	return 0x7
@@ -7239,7 +7239,7 @@ func (RRC_0A) Exec(cpu *CPU) {
 	cpu.D = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RRC_0A) Code() uint8 {
 	return 0xA
@@ -7256,7 +7256,7 @@ func (RRC_0E) Exec(cpu *CPU) {
 	cpu.WriteMemory(cpu.HL(), res)
 	cpu.F = flags
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (RRC_0E) Code() uint8 {
 	return 0xE
@@ -7273,7 +7273,7 @@ func (RL_15) Exec(cpu *CPU) {
 	cpu.L = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_15) Code() uint8 {
 	return 0x15
@@ -7342,7 +7342,7 @@ func (RR_18) Exec(cpu *CPU) {
 	cpu.B = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_18) Code() uint8 {
 	return 0x18
@@ -7415,7 +7415,7 @@ func (BIT_4F) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_4F) Code() uint8 {
 	return 0x4F
@@ -7432,7 +7432,7 @@ func (RR_1A) Exec(cpu *CPU) {
 	cpu.D = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RR_1A) Code() uint8 {
 	return 0x1A
@@ -7479,7 +7479,7 @@ func (BIT_4E) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_4E) Code() uint8 {
 	return 0x4E
@@ -7535,7 +7535,7 @@ func (RL_13) Exec(cpu *CPU) {
 	cpu.E = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_13) Code() uint8 {
 	return 0x13
@@ -7569,7 +7569,7 @@ func (BIT_4C) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_4C) Code() uint8 {
 	return 0x4C
@@ -7616,7 +7616,7 @@ func (BIT_52) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_52) Code() uint8 {
 	return 0x52
@@ -7663,7 +7663,7 @@ func (BIT_48) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_48) Code() uint8 {
 	return 0x48
@@ -7710,7 +7710,7 @@ func (BIT_4D) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_4D) Code() uint8 {
 	return 0x4D
@@ -7731,7 +7731,7 @@ func (BIT_72) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_72) Code() uint8 {
 	return 0x72
@@ -7765,7 +7765,7 @@ func (BIT_51) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_51) Code() uint8 {
 	return 0x51
@@ -7786,7 +7786,7 @@ func (BIT_71) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_71) Code() uint8 {
 	return 0x71
@@ -7803,7 +7803,7 @@ func (RL_17) Exec(cpu *CPU) {
 	cpu.A = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RL_17) Code() uint8 {
 	return 0x17
@@ -7824,7 +7824,7 @@ func (BIT_42) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_42) Code() uint8 {
 	return 0x42
@@ -7854,7 +7854,7 @@ func (RLC_01) Exec(cpu *CPU) {
 	cpu.C = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_01) Code() uint8 {
 	return 0x1
@@ -7875,7 +7875,7 @@ func (BIT_4B) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_4B) Code() uint8 {
 	return 0x4B
@@ -7957,7 +7957,7 @@ func (RLC_03) Exec(cpu *CPU) {
 	cpu.E = res
 	cpu.F = flags
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (RLC_03) Code() uint8 {
 	return 0x3
@@ -8017,7 +8017,7 @@ func (BIT_74) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_74) Code() uint8 {
 	return 0x74
@@ -8090,7 +8090,7 @@ func (BIT_46) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_46) Code() uint8 {
 	return 0x46
@@ -8111,7 +8111,7 @@ func (BIT_7A) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_7A) Code() uint8 {
 	return 0x7A
@@ -8132,7 +8132,7 @@ func (BIT_7E) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 func (BIT_7E) Code() uint8 {
 	return 0x7E
@@ -8192,7 +8192,7 @@ func (BIT_57) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_57) Code() uint8 {
 	return 0x57
@@ -8213,7 +8213,7 @@ func (BIT_5F) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_5F) Code() uint8 {
 	return 0x5F
@@ -8256,7 +8256,7 @@ func (RL_16) Exec(cpu *CPU) {
 	cpu.WriteMemory(cpu.HL(), res)
 	cpu.F = flags
 
-	cpu.cycles += 16
+	cpu.Cycles += 16
 }
 func (RL_16) Code() uint8 {
 	return 0x16
@@ -8303,7 +8303,7 @@ func (BIT_58) Exec(cpu *CPU) {
 	flags |= FLAGH
 	cpu.F = FlagRegister(flags)
 
-	cpu.cycles += 8
+	cpu.Cycles += 8
 }
 func (BIT_58) Code() uint8 {
 	return 0x58

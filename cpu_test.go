@@ -1096,8 +1096,8 @@ func (cpu *CPUHelper) DumpMem(lower, upper int) {
 	fmt.Printf("%s\n", hex.Dump(cpu.Mem.data[lower:upper]))
 }
 func (cpu *CPUHelper) ExpectCycleCount(want int) {
-	if cpu.cycles != want {
-		cpu.t.Fatalf("want=%d, got=%d", want, cpu.cycles)
+	if cpu.Cycles != want {
+		cpu.t.Fatalf("want=%d, got=%d", want, cpu.Cycles)
 	}
 }
 func (cpu *CPUHelper) ExpectErr(t *testing.T, want error) {
