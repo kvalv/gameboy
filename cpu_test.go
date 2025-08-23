@@ -896,6 +896,7 @@ func TestInstructions(t *testing.T) {
 			cpu.stopAtnop = true
 			initCPU(cpu)
 			mem := NewMemory()
+			mem.DisableBoot()
 			tc.initMem(mem)
 			mem.Write(INSTR_STOP) // ensure we have a stop instruction at the end
 			Run(cpu, mem, logger(tc.debug))

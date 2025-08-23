@@ -9,16 +9,21 @@ import (
 
 type Memory struct {
 	i    int
-	data Cartridge
+	data []byte
+	cart Cartridge
 	boot []byte
 }
 
-func NewMemory() *Memory {
-	kB := 1024
-	return &Memory{
-		data: make([]byte, 64*kB),
+func NewMemory(cart []byte) *Memory {
+	mem := &Memory{
+		data: make([]byte, 64*1024),
+		cart: Cartridge(cart),
+		boot: BootROM,
 	}
-
+	if len(cart) == 32*1024 { // tetris
+		copy(mem.data, mem.cart)
+	}
+	return mem
 }
 
 func (m *Memory) Size() int {
@@ -26,6 +31,9 @@ func (m *Memory) Size() int {
 }
 
 func (m *Memory) Access(p uint16) (byte, bool) {
+	if m.BootActive() && p <= 0xff { // intercept
+		return m.boot[p], true
+	}
 	if int(p) >= len(m.data) {
 		return 0, false
 	}
@@ -196,6 +204,11 @@ func (m *Memory) LYC() uint8 { return m.data[ADDR_LYC] } // Scanline Compare Reg
 // boot rom code. Otherwise, it the address range 0x0000 - 0x00FF works normally.
 func (m *Memory) BootActive() bool {
 	return bit(m.data[0xFF50], 0) == 0
+}
+
+// For testing, we may disable boot and go straight to the cart
+func (m *Memory) DisableBoot() {
+	m.data[0xFF50] = 1
 }
 
 type Block struct {

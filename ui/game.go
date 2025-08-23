@@ -32,9 +32,14 @@ type Game struct {
 	init   bool
 }
 
-func NewGame() *Game {
+func NewGame(file string) *Game {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
+
 	cpu := gameboy.CPU{
-		Mem: gameboy.NewMemory().Write(gameboy.BootROM),
+		Mem: gameboy.NewMemory(b),
 	}
 	cpu.WithLog(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {

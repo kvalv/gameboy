@@ -11,6 +11,7 @@ import (
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var file = flag.String("file", "", "gameboy file to run")
 
 func main() {
 	flag.Parse()
@@ -24,7 +25,11 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	g := ui.NewGame()
+	if *file == "" {
+		log.Fatal("file missing")
+	}
+
+	g := ui.NewGame(*file)
 
 	// ebiten.SetWindowSize(200, 200)
 	ebiten.SetWindowTitle("Game Boy")

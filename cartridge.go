@@ -5,8 +5,6 @@ import (
 	"fmt"
 )
 
-const kB = uint(1024)
-
 // Header: 0x0100 - 0x014F
 // Entry point: 0x100 - 0x103 (typically NOP, JP
 // Logo: 0x104 - 0x133
