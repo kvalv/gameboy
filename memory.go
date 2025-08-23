@@ -9,7 +9,8 @@ import (
 
 type Memory struct {
 	i    int
-	data []byte
+	data Cartridge
+	boot []byte
 }
 
 func NewMemory() *Memory {
@@ -189,6 +190,13 @@ func (m *Memory) SCX() uint8 { return m.data[ADDR_SCK] } // Horizontal Scroll Re
 
 func (m *Memory) LY() uint8  { return m.data[ADDR_LY] }  // Scanline Register
 func (m *Memory) LYC() uint8 { return m.data[ADDR_LYC] } // Scanline Compare Register
+
+// Read BOOT - Boot ROM lock register.
+// If it's active, then it intercepts accesses to 0x0000 - 0x00FF and executes the
+// boot rom code. Otherwise, it the address range 0x0000 - 0x00FF works normally.
+func (m *Memory) BootActive() bool {
+	return bit(m.data[0xFF50], 0) == 0
+}
 
 type Block struct {
 	Offset uint16

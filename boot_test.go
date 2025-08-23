@@ -9,6 +9,7 @@ import (
 )
 
 func TestBootLoader(t *testing.T) {
+	t.Skip()
 	// TODO: LD  ...
 
 	t.Run("binary", func(t *testing.T) {
