@@ -1,4 +1,4 @@
-package gameboy
+package cartridge
 
 import (
 	_ "embed"
@@ -7,14 +7,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:embed pokemon.gb
+//go:embed data/pokemon.gb
 var POKEMON []byte
 
-//go:embed tetris.gb
+//go:embed data/tetris.gb
 var TETRIS []byte
 
+//go:embed data/ld.gb
+var LD []byte
+
 func TestTitle(t *testing.T) {
-	got := NewCartridge(POKEMON).Title()
+	got := New(POKEMON).rom.Title()
 	want := "POKEMON BLUE"
 
 	if got != want {
@@ -24,8 +27,8 @@ func TestTitle(t *testing.T) {
 
 func TestTetris(t *testing.T) {
 	req := require.New(t)
-	cart := NewCartridge(TETRIS)
-	req.Equal(MemoryBankControllerNone, cart.Type())
-	req.Equal(32*kB, cart.ROMSize())
-	req.Equal(uint(0), cart.RAMSize())
+	cart := New(TETRIS)
+	req.Equal(Type0, cart.rom.Title())
+	req.Equal(32*kB, cart.rom.Title())
+	req.Equal(uint(0), cart.rom.Title())
 }

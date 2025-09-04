@@ -12,9 +12,9 @@ var templRet = template.Must(tmpl.New("ret").
 	Parse(`
 if {{cond .Predicate}} {
 	{{set "PC" true "cpu.PopStack()"}}
-	cpu.cycles += {{ indexOrLast .Cycles 0 }}
+	cpu.Cycles += {{ indexOrLast .Cycles 0 }}
 } else {
-	cpu.cycles += {{ indexOrLast .Cycles 1 }}
+	cpu.Cycles += {{ indexOrLast .Cycles 1 }}
 }
 `))
 

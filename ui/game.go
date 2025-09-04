@@ -29,7 +29,6 @@ type Game struct {
 
 	// reference to the screen screen
 	screen *Screen
-	init   bool
 }
 
 func NewGame(file string) *Game {
@@ -37,6 +36,7 @@ func NewGame(file string) *Game {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("opening game %q\n", file)
 
 	cpu := gameboy.CPU{
 		Mem: gameboy.NewMemory(b),
@@ -49,10 +49,9 @@ func NewGame(file string) *Game {
 			return a
 		},
 	})))
-	cpu.Mem.CursorAt(0x0104)
-	cpu.Mem.Write(gameboy.BootLogo)
-	cpu.WithHook(func(cpu *gameboy.CPU, loc int, instr gameboy.Instruction, log *slog.Logger) {
-	})
+	// cpu.Mem.CursorAt(0x0104)
+	// cpu.Mem.Write(gameboy.BootLogo)
+
 	game := &Game{
 		displayVRAM:    NewDisplayVRAM(cpu.Mem),
 		input:          NewInput(),
@@ -61,10 +60,22 @@ func NewGame(file string) *Game {
 		cpu:            &cpu,
 	}
 
+	var didBreak bool
+	cpu.WithHook(func(cpu *gameboy.CPU, loc int, instr gameboy.Instruction, log *slog.Logger) {
+		if cpu.Mem.Read(0xFF50) > 0 {
+			panic("X")
+		}
+		if !cpu.Mem.BootActive() && !didBreak {
+			game.EnableBreakpoint()
+			didBreak = true
+		}
+	})
+
 	// "Double up" all the bits of the graphics data
 	// game.BreakPointAt(0x0095) // logo to vram routine
 	// game.BreakPointAt(0x0055) // logo loaded into vram, start scrolling
-	// game.BreakPointAt(0x0055) // scroll logo
+	// game.BreakPointAt(0x0054) // scroll logo
+	// game.BreakPointAt(0x00fe) // disable boot
 
 	return game
 }
@@ -81,8 +92,8 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	if g.input.KeyN {
+		fmt.Printf("key n pressed - stepped is true (prev %t)\n", g.debugger.Stepped)
 		g.debugger.Stepped = true
-		fmt.Printf("key n pressed\n")
 	}
 
 	_, err := g.debugui.Update(func(ctx *debugui.Context) error {
@@ -90,11 +101,14 @@ func (g *Game) Update() error {
 			ctx.Header("info", true, func() {
 				ctx.SetGridLayout([]int{-2, -1}, nil)
 
-				ctx.Text("Next instruction")
+				ctx.Text("next")
 				ctx.Text(nextInstr(cpu))
 
 				ctx.Text("TPS")
 				ctx.Text(fmt.Sprintf("%0.2f", ebiten.ActualTPS()))
+
+				ctx.Text("boot active")
+				ctx.Text(fmt.Sprintf("%t", cpu.Mem.BootActive()))
 			})
 			ctx.Header("PPU Registers", false, func() {
 				ctx.SetGridLayout([]int{-2, -1}, nil)
@@ -141,18 +155,22 @@ func (g *Game) Update() error {
 	}
 
 	// otherwise just run regularly...
-	if !g.init {
-		g.init = true
-		// for g.cpu.InstrCount < 1000000 {
-		for !g.cpu.Mem.VRAM().HasData() {
-			g.cpu.Step()
+	n0 := g.cpu.Cycles
+	limit := 70000
+	for g.cpu.Cycles-n0 < CYCLES_TO_RUN {
+		limit--
+		if limit == 0 {
+			panic(fmt.Sprintf("too many steps in a single cycle: %s", cpu.CurrentInstr()))
 		}
-		fmt.Printf("data is now set\n")
-	} else {
-		n0 := g.cpu.Cycles
-		for g.cpu.Cycles-n0 < CYCLES_TO_RUN {
-			g.cpu.Step()
+		ok := g.cpu.Step()
+		if !ok {
+			return fmt.Errorf("stopped execution: %w", g.cpu.Err())
 		}
+	}
+	limit = 70000 * 10 // Skip the loader...
+	for cpu.Mem.BootActive() && limit > 0 {
+		g.cpu.Step()
+		limit--
 	}
 
 	g.offset++
@@ -164,6 +182,11 @@ func (g *Game) BreakPointAt(loc uint16) *Game {
 		Enabled:    true,
 		BreakPoint: loc,
 	}
+	return g
+}
+
+func (g *Game) EnableBreakpoint() *Game {
+	g.debugger.Enabled = true
 	return g
 }
 
@@ -220,7 +243,7 @@ func hexstr[V uint8 | uint16 | int | int8](v V, n ...int) string {
 func nextInstr(cpu *gameboy.CPU) string {
 	s := cpu.CurrentInstr().String()
 	if strings.HasSuffix(s, "n8") {
-		n, _ := cpu.Mem.Access(cpu.PC + 1)
+		n := cpu.Mem.Read(cpu.PC + 1)
 		// ADD A,0x04
 		return fmt.Sprintf("%s%s", strings.TrimSuffix(s, "n8"), hexstr(n))
 	}
@@ -229,8 +252,13 @@ func nextInstr(cpu *gameboy.CPU) string {
 		// ADD A,0x04
 		return fmt.Sprintf("%s%s", strings.TrimSuffix(s, "n16"), hexstr(n))
 	}
+	if strings.HasSuffix(s, "a16") {
+		n := cpu.Mem.AccessU16(cpu.PC + 1)
+		// ADD A,0x04
+		return fmt.Sprintf("%s%s", strings.TrimSuffix(s, "a16"), hexstr(n))
+	}
 	if strings.Contains(s, "a8") {
-		n, _ := cpu.Mem.Access(cpu.PC + 1)
+		n := cpu.Mem.Read(cpu.PC + 1)
 		return strings.ReplaceAll(s, "a8", hexstr(n))
 	}
 	return s

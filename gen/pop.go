@@ -10,7 +10,7 @@ var templPop = template.Must(tmpl.New("pop").
 	Parse(`
 value := cpu.PopStack()
 {{set .Name true "value"}}
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataPop struct {

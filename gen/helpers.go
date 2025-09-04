@@ -39,6 +39,8 @@ func get(name string, immediate bool) string {
 	case "e8":
 		// e8: signed 8-bit data
 		return "cpu.readI8(cpu.PC)"
+	case "0", "1", "2", "3", "4", "5", "6", "7":
+		return name
 	}
 	if strings.HasPrefix(name, "$") {
 		n, err := strconv.ParseInt(name[1:], 16, 8)

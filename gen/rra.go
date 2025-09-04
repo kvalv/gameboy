@@ -11,7 +11,7 @@ var templRra = template.Must(tmpl.New("rra").
 	}).
 	Parse(`
 cpu.A, cpu.F = rotate(cpu.A, 1, cpu.F, false)
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataRra struct {

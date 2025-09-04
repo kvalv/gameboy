@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strconv"
 )
 
@@ -75,9 +76,15 @@ type CPU struct {
 	// peripherals
 	ppu PPU
 
+	// interrupts enabled or not
+	ime bool
+
 	// last error from Step()
 	err error
 }
+
+// TODO: rm
+func (cpu *CPU) HasPrefix() bool { return cpu.prefix }
 
 func (cpu *CPU) CurrentInstr() Instruction {
 	code := cpu.loadU8(cpu.PC)
@@ -102,10 +109,7 @@ func (cpu *CPU) AF() uint16 { return concatU16(cpu.A, Register(cpu.F)) }
 
 // loads and increments the progrm counter
 func (cpu *CPU) load(addr uint16, dst any) {
-	b, ok := cpu.Mem.Access(addr)
-	if !ok {
-		cpu.err = ErrNoMoreInstructions
-	}
+	b := cpu.Mem.Read(addr)
 	// cpu.IncProgramCounter()
 	switch concr := dst.(type) {
 	case *uint8:
@@ -146,10 +150,11 @@ func (cpu *CPU) WriteMemory(addr uint16, value any) {
 	}
 	switch value := value.(type) {
 	case uint8:
-		cpu.Mem.WriteData(addr, []byte{value})
+		cpu.Mem.WriteAt(addr, value)
 	case uint16:
 		msb, lsb := split(value)
-		cpu.Mem.WriteData(addr, []byte{lsb, msb})
+		cpu.Mem.WriteAt(addr, lsb)
+		cpu.Mem.WriteAt(addr+1, msb)
 	}
 }
 
@@ -194,6 +199,23 @@ func (cpu *CPU) WithHook(hook func(cpu *CPU, loc int, instr Instruction, log *sl
 }
 
 func (cpu *CPU) Step() bool {
+	var (
+		instr Instruction
+		ok    bool
+	)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("Panicked at %#4x\n", cpu.PC)
+			cpu.Dump(os.Stderr)
+			if instr != nil {
+				fmt.Printf("At instruction %s code=0x%x\n", instr.String(), instr.Code())
+			} else {
+				fmt.Printf("At unknown instruction\n")
+			}
+			panic(err)
+		}
+	}()
+
 	cpu.InstrCount++
 	if cpu.err != nil {
 		return false
@@ -215,28 +237,32 @@ func (cpu *CPU) Step() bool {
 		return false // NOP command
 	}
 	if !cpu.prefix && code == 0x10 {
+		fmt.Printf("PC=%4x\n", cpu.PC)
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}
 
-	var (
-		instr Instruction
-		ok    bool
-	)
 	if cpu.prefix {
 		instr, ok = extOps[code]
 		cpu.prefix = false
+		if !ok {
+			cpu.err = fmt.Errorf("unknown code (prefix): %#x", code)
+			return false
+		}
 	} else {
 		instr, ok = ops[code]
+		if !ok {
+			cpu.err = fmt.Errorf("unknown code: %#x", code)
+			return false
+		}
+	}
+
+	if cpu.Mem.data[0xFF02] == 0x81 {
+		panic("YAY")
 	}
 
 	for _, hook := range cpu.hooks {
 		hook(cpu, int(cpu.PC)-1, instr, cpu.log)
-	}
-
-	if !ok {
-		cpu.err = fmt.Errorf("unknown code: %#x", code)
-		return false
 	}
 
 	// Invariant: the PC is at the instruction at the start of the operation
@@ -295,4 +321,14 @@ func Run(cpu *CPU, mem *Memory, log *slog.Logger) error {
 	for cpu.Step() {
 	}
 	return cpu.Err()
+}
+
+func literal(n string) int {
+	switch n {
+	case "0", "1", "2", "3", "4", "5", "6", "7":
+		j, _ := strconv.Atoi(n)
+		return j
+	default:
+		panic("Not a bit index")
+	}
 }

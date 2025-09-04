@@ -14,9 +14,9 @@ e := {{get "e8" true}}
 {{pc "e8"}}
 if {{cond .Predicate}} {
 	cpu.PC, cpu.F = add(cpu.PC, e)
-	cpu.cycles += {{ indexOrLast .Cycles 0 }}
+	cpu.Cycles += {{ indexOrLast .Cycles 0 }}
 } else {
-	cpu.cycles += {{ indexOrLast .Cycles 1 }}
+	cpu.Cycles += {{ indexOrLast .Cycles 1 }}
 }
 `))
 

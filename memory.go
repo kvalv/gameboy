@@ -5,23 +5,22 @@ import (
 	"fmt"
 	"io"
 	"slices"
+
+	"github.com/kvalv/gameboy/cartridge"
 )
 
 type Memory struct {
 	i    int
 	data []byte
-	cart Cartridge
+	cart cartridge.Cartridge
 	boot []byte
 }
 
 func NewMemory(cart []byte) *Memory {
 	mem := &Memory{
 		data: make([]byte, 64*1024),
-		cart: Cartridge(cart),
+		cart: cartridge.New(cart),
 		boot: BootROM,
-	}
-	if len(cart) == 32*1024 { // tetris
-		copy(mem.data, mem.cart)
 	}
 	return mem
 }
@@ -30,26 +29,82 @@ func (m *Memory) Size() int {
 	return len(m.data)
 }
 
-func (m *Memory) Access(p uint16) (byte, bool) {
-	if m.BootActive() && p <= 0xff { // intercept
-		return m.boot[p], true
+func (m *Memory) Read(addr uint16) byte {
+	// https://gbdev.io/pandocs/Memory_Map.html
+	switch {
+	case within(addr, 0x0000, 0x00FF) && m.BootActive():
+		return m.boot[addr]
+	case within(addr, 0x0000, 0x8000): // Cartridge ROM
+		return m.cart.Read(addr)
+	case within(addr, 0x8000, 0xA000): // VRAM
+		return m.data[addr]
+	case within(addr, 0xA000, 0xC000): // Cartridge RAM
+		return m.cart.Read(addr)
+	case within(addr, 0xC000, 0xE000): // Internal RAM
+		return m.data[addr]
+	case within(addr, 0xE000, 0xFE00): // Echo RAM, same as Internal
+		// All reads same as C000-DDFF
+		return m.data[addr-0x2000]
+	case within(addr, 0xFE00, 0xFEA0): // Object Attribute Memory
+		return m.data[addr] // OAM
+	case within(addr, 0xFEA0, 0xFF00): // Not Usable
+		panic(fmt.Sprintf("unusable memory: illegal access %#4x", addr))
+	case within(addr, 0xFF00, 0xFF80): // IO Registers
+		return m.data[addr]
+	case within(addr, 0xFF80, 0xFFFF): // High RAM
+		return m.data[addr]
+	case addr == 0xFFFF: // Interrupt Enable Register
+		return m.data[addr]
 	}
-	if int(p) >= len(m.data) {
-		return 0, false
-	}
-	return m.data[p], true
+	panic(fmt.Sprintf("illegal memory access %#4x", addr))
 }
+
+func (m *Memory) WriteAt(addr uint16, b byte) *Memory {
+	switch {
+	case m.BootActive() && addr <= 0xFF:
+		panic("Write to boot")
+	case within(addr, 0x00, 0x8000): // cartridge ROM
+		m.cart.Write(addr, b)
+	case within(addr, 0x8000, 0xA000): // VRAM
+		m.data[addr] = b
+	case within(addr, 0xa000, 0xc000): // Cartridge RAM
+		m.cart.Write(addr, b)
+	case within(addr, 0xC000, 0xE000): // Internal RAM
+		m.data[addr] = b
+	case within(addr, 0xE000, 0xFE00): // Echo RAM
+		panic("Write echo ram - not implemented")
+	case within(addr, 0xFE00, 0xFEA0): // Object Attribute Memory
+		m.data[addr] = b
+	case within(addr, 0xFEA0, 0xFF00): // Not Usable
+		panic(fmt.Sprintf("unusable memory: illegal write: %#4x", addr))
+	case within(addr, 0xFF00, 0xFF80): // IO Registers
+		m.data[addr] = b
+	case within(addr, 0xFF80, 0xFFFF): // High RAM
+		m.data[addr] = b
+	case addr == 0xFFFF: // Interrupt Enable Register
+		m.data[addr] = b
+	default:
+		panic(fmt.Sprintf("Write: to address %#x - not supported", addr))
+	}
+	return m
+}
+
 func (m *Memory) AccessU16(p uint16) uint16 {
 	// var msb, lsb byte
-	lsb, _ := m.Access(p)
-	msb, _ := m.Access(p + 1)
+	lsb := m.Read(p)
+	msb := m.Read(p + 1)
 	return concatU16(msb, lsb)
 }
 
 func (m *Memory) WriteInstr(v uint8) *Memory {
 	return m.Write(v)
 }
+
 func (m *Memory) Write(elems ...any) *Memory {
+	// well, we need to go via the mbc here...?
+	// TODO: this doesn't write via the mbc or anything, so
+	// we need to handle that! This is probably the issue :-)
+
 	for _, v := range elems {
 		switch v := v.(type) {
 		case []byte:
@@ -88,17 +143,8 @@ func (m *Memory) CursorAt(p int) *Memory {
 	return m
 }
 
-func (m *Memory) WriteByteAt(off uint16, value byte) *Memory {
-	return m.WriteData(off, []byte{value})
-}
-func (m *Memory) WriteData(off uint16, p []byte) *Memory {
-	if len(m.data) < int(off)+len(p) {
-		panic("Outside bound")
-	}
-	for i := range len(p) {
-		m.data[int(off)+i] = p[i]
-	}
-	return m
+func within(addr uint16, lo, hi uint16) bool {
+	return lo <= addr && addr < hi
 }
 
 func (m *Memory) Dump(w io.Writer) {
@@ -208,7 +254,7 @@ func (m *Memory) BootActive() bool {
 
 // For testing, we may disable boot and go straight to the cart
 func (m *Memory) DisableBoot() {
-	m.data[0xFF50] = 1
+	m.Write(0xFF50, 1)
 }
 
 type Block struct {

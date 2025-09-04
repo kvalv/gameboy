@@ -24,5 +24,5 @@ func (p *PPU) Step(cpu *CPU) {
 	// 0 - 143 -> drawing lines
 	// 144 - 153 -> vblank
 	LY := (cpu.Mem.LY() + 1) % (154)
-	cpu.Mem.WriteByteAt(ADDR_LY, LY)
+	cpu.Mem.WriteAt(ADDR_LY, LY)
 }

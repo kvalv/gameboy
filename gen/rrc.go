@@ -19,7 +19,7 @@ res, flags := rotate({{get .Name .Immediate}}, 1, cpu.F, true)
 {{set .Name .Immediate "res"}}
 cpu.F = flags
 
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataRrc struct {

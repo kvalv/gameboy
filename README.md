@@ -6,14 +6,26 @@ Has the same registers as Intel 8080.
 SP = next unused memory address in stack
 PC = next instruction to execute
 
+Read byterange
+```
+xxd -g1 -s 0x100 -l 0x4f pokemon.gb
+```
+
+- Video RAM
+- Work RAM, cartridge RAM, Save RAM
+
+CPU <-> RAM <-> Cartridge
+
+CPU access memory in RAM, and if it's within one of the RAM banks, then
+access data from cartridge. 
+
 
 ## Ideas
 - Debug viewer that loads tile data and tile maps. Lets me see the graphics state.
 
 # Memory
-The simplest cartridges contained 32kB of space (0x0000 - 0x7ffff). The entire
-game fits into the. 
-Memory Bank Controller (MBC)
+The simplest cartridges contained 32kB of space (0x0000 - 0x7ffff). The entire game fits into it. For largeer games, an MBC (Memory Bank Controller)
+swaps out 16kB blocks of RAM from the cartridge.
 
 References:
 - https://retrocomputing.stackexchange.com/questions/11732/how-does-the-gameboys-memory-bank-switching-work

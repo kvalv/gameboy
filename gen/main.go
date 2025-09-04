@@ -43,7 +43,6 @@ func generateInstructions(file string) error {
 		return err
 	}
 	defer f.Close()
-	main = omit(main, "RRCA")
 
 	data := map[string][]Opcode{
 		"Main": main,
@@ -98,6 +97,8 @@ func ({{.ID}}) Exec(cpu *CPU) {
 		{{ template "or" .DataOr -}}
 	{{- else if eq "XOR" .Mnemonic -}}
 		{{ template "xor" .DataXor -}}
+	{{- else if eq "SWAP" .Mnemonic -}}
+		{{ template "swap" .DataSwap -}}
 	{{- else if eq "CP" .Mnemonic -}}
 		{{ template "cp" .DataCp -}}
 	{{- else if eq "ILLEGAL" .Mnemonic -}}
@@ -106,6 +107,24 @@ func ({{.ID}}) Exec(cpu *CPU) {
 		{{ template "prefix" .DataPrefix -}}
 	{{- else if eq "JR" .Mnemonic -}}
 		{{ template "jr" .DataJr -}}
+	{{- else if eq "EI" .Mnemonic -}}
+		{{ template "ei" .DataEi -}}
+	{{- else if eq "DI" .Mnemonic -}}
+		{{ template "di" .DataDi -}}
+	{{- else if eq "RETI" .Mnemonic -}}
+		{{ template "reti" .DataReti -}}
+	{{- else if eq "JP" .Mnemonic -}}
+		{{ template "jp" .DataJp -}}
+	{{- else if eq "AND" .Mnemonic -}}
+		{{ template "and" .DataAnd -}}
+	{{- else if eq "RES" .Mnemonic -}}
+		{{ template "res" .DataRes -}}
+	{{- else if eq "SET" .Mnemonic -}}
+		{{ template "set" .DataSet -}}
+	{{- else if eq "CPL" .Mnemonic -}}
+		{{ template "cpl" .DataCpl -}}
+	{{- else if eq "SRL" .Mnemonic -}}
+		{{ template "srl" .DataSrl -}}
 	{{- else if eq "RLA" .Mnemonic -}}
 		{{ template "rla" .DataRla -}}
 	{{- else if eq "RRA" .Mnemonic -}}
@@ -128,7 +147,8 @@ func ({{.ID}}) Exec(cpu *CPU) {
 	{{- else if eq "RRC" .Mnemonic -}}
 		{{ template "rrc" .DataRrc -}}
 	{{else}}
-		panic("TODO {{.ID}}")
+		fmt.Println("TODO: {{.ID}}")
+		// panic("TODO {{.ID}}")
 	{{end -}}
 }
 func ({{.ID}}) Code() uint8 {
@@ -159,22 +179,6 @@ func code(s string) uint8 {
 	default: panic(fmt.Sprintf("Unknown code for %q", s))
 	}
 }
-func name(code uint8, prefix bool) string {
-	if prefix {
-		switch code {
-		{{range .Ext -}}
-			case {{.Code}}: return "{{.String}}"
-		{{end}}
-		}
-	}
-	switch code {
-	{{range .Main -}}
-	case {{.Code}}: return "{{.String}}"
-	{{end}}
-	default: panic(fmt.Sprintf("Unknown code for %d", code))
-	}
-}
-
 `))
 
 // formats file. The generated file may look crap, so we pass it to gofmt to make

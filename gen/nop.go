@@ -5,7 +5,7 @@ import "text/template"
 var templNop = template.Must(tmpl.New("nop").
 	Funcs(template.FuncMap{}).
 	Parse(`
-cpu.cycles += 4
+cpu.Cycles += 4
 `))
 
 type templDataNop struct{}

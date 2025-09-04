@@ -18,7 +18,7 @@ func TestBootLoader(t *testing.T) {
 			CPU: &CPU{
 				// limit: 100_000,
 			}}
-		mem := NewMemory().Write(BootROM)
+		mem := NewMemory(nil).Write(BootROM)
 		if mem.LY() == 0 {
 			panic("0")
 		}

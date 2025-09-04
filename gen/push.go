@@ -9,7 +9,7 @@ var templPush = template.Must(tmpl.New("push").
 	}).
 	Parse(`
 cpu.PushStack({{get .Name true}})
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataPush struct {

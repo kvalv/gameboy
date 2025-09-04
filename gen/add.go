@@ -16,7 +16,7 @@ rhs := {{get .Rhs .RhsImmediate}}
 res, flags := add(lhs, rhs)
 {{set .Dst true "res"}}
 cpu.F = flags
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataAdd struct {

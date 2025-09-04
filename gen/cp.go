@@ -12,7 +12,7 @@ var templCp = template.Must(tmpl.New("cp").
 _, flags := sub({{get "A" true}}, {{get .Name .Immediate}})
 {{pc .Name}}
 cpu.F = flags
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataCp struct {

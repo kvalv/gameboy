@@ -10,14 +10,17 @@ var templRst = template.Must(tmpl.New("rst").
 n := {{get .Name true}}
 cpu.PushStack(cpu.PC)
 cpu.PC = concatU16(0x00, n)
+cpu.Cycles += {{.Cycles}}
 `))
 
 type templDataRst struct {
-	Name string
+	Name   string
+	Cycles int
 }
 
 func (o Opcode) DataRst() templDataRst {
 	return templDataRst{
-		Name: o.Operands.First().Name,
+		Name:   o.Operands.First().Name,
+		Cycles: o.CycleCount(),
 	}
 }

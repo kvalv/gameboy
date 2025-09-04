@@ -6,7 +6,7 @@ var templStop = template.Must(tmpl.New("stop").
 	Funcs(template.FuncMap{}).
 	Parse(`
 cpu.err = ErrNoMoreInstructions
-cpu.cycles += 4
+cpu.Cycles += 4
 `))
 
 type templDataStop struct{}

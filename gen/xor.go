@@ -17,7 +17,7 @@ if res == 0 {
 }
 cpu.F = FlagRegister(flags)
 {{set "A" true "res"}}
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataXor struct {

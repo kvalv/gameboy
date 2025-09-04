@@ -20,7 +20,7 @@ if (value & (1 << {{.Num}})) == 0 {
 flags |= FLAGH
 cpu.F = FlagRegister(flags)
 
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataBit struct {

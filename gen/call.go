@@ -20,9 +20,9 @@ nn := concatU16(msb, lsb)
 if {{cond .Predicate }} {
 	cpu.PushStack(cpu.PC)
 	cpu.PC = nn
-	cpu.cycles += 24
+	cpu.Cycles += 24
 }  else {
-	cpu.cycles += 12
+	cpu.Cycles += 12
 }
 `))
 

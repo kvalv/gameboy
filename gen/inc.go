@@ -11,7 +11,7 @@ var templInc = template.Must(tmpl.New("inc").
 res, flags := add({{get .Name .Immediate}}, 0x01)
 cpu.F = flags
 {{set .Name .Immediate "res"}}
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataInc struct {

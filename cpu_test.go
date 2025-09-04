@@ -45,7 +45,7 @@ func TestInstructions(t *testing.T) {
 			initMem: func(m *Memory) {
 				m.WriteInstr(0x86) // ADD A,HL
 				m.WriteInstr(0x01) // STOP
-				m.WriteData(0x000a, []byte{0x44})
+				m.WriteAt(0x000a, 0x44)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectA(0x45)
@@ -91,7 +91,7 @@ func TestInstructions(t *testing.T) {
 			initMem: func(m *Memory) {
 				m.WriteInstr(0x86)
 				m.WriteInstr(INSTR_STOP)
-				m.WriteData(0x1122, []byte{0x02})
+				m.WriteAt(0x1122, 0x02)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectA(0x03)
@@ -121,7 +121,7 @@ func TestInstructions(t *testing.T) {
 			initMem: func(m *Memory) {
 				m.WriteInstr(0x34)
 				m.WriteInstr(INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x33)
+				m.WriteAt(0x1122, 0x33)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x34)
@@ -186,7 +186,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x34)
-				m.WriteByteAt(0x1122, 0x33)
+				m.WriteAt(0x1122, 0x33)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x34)
@@ -200,7 +200,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x35)
-				m.WriteByteAt(0x1122, 0x00)
+				m.WriteAt(0x1122, 0x00)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0xFF)
@@ -259,7 +259,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x0A, INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x33)
+				m.WriteAt(0x1122, 0x33)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectA(0x33)
@@ -284,7 +284,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x22, INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x01)
+				m.WriteAt(0x1122, 0x01)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x33)
@@ -300,7 +300,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x32, INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x01)
+				m.WriteAt(0x1122, 0x01)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x33)
@@ -340,7 +340,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x4E, INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x33)
+				m.WriteAt(0x1122, 0x33)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectC(0x33)
@@ -355,7 +355,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0x70, INSTR_STOP)
-				m.WriteByteAt(0x1122, 0x01)
+				m.WriteAt(0x1122, 0x01)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectMem(0x1122, 0x33)
@@ -382,7 +382,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0xC4, 0x22, 0x11) // stored as lsb, msb -- so bits reversed
-				m.WriteByteAt(0x1122, INSTR_STOP)
+				m.WriteAt(0x1122, INSTR_STOP)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectPC(0x1123) // 0x1122 + 1, since we're reading another instruction before stopping
@@ -402,7 +402,7 @@ func TestInstructions(t *testing.T) {
 			},
 			initMem: func(m *Memory) {
 				m.Write(0xC4, 0x22, 0x11) // stored as lsb, msb -- so bits reversed
-				m.WriteByteAt(0x1122, INSTR_STOP)
+				m.WriteAt(0x1122, INSTR_STOP)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				// instr + a16 + stop
@@ -417,7 +417,7 @@ func TestInstructions(t *testing.T) {
 			cpu:  CPU{},
 			initMem: func(m *Memory) {
 				m.Write(0xCD, 0x22, 0x11)
-				m.WriteByteAt(0x1122, INSTR_STOP)
+				m.WriteAt(0x1122, INSTR_STOP)
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectPC(0x1123)
@@ -882,6 +882,136 @@ func TestInstructions(t *testing.T) {
 				cpu.ExpectFlagCarry()
 			},
 		},
+		{
+			desc: "AND A,B",
+			cpu:  CPU{A: 0b011, B: 0b101},
+			initMem: func(m *Memory) {
+				m.Write("AND A,B")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b001)
+			},
+		},
+		{
+			desc: "AND A,n8",
+			cpu:  CPU{A: 0b011},
+			initMem: func(m *Memory) {
+				m.Write("AND A,n8", 0b101)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0b001)
+			},
+		},
+		{
+			desc: "SWAP A",
+			cpu:  CPU{A: 0xab},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SWAP A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0xba)
+			},
+		},
+		{
+			desc: "SWAP (HL)",
+			cpu:  CPU{H: 0x11, L: 0x22},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SWAP (HL)")
+				m.CursorAt(0x1122)
+				m.Write(0xab)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0xba)
+			},
+		},
+		{
+			desc: "RES 1,A",
+			cpu:  CPU{A: 0xff},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "RES 1,A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0xfd)
+			},
+		},
+		{
+			desc: "RES 1,(HL)",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "RES 1,(HL)")
+				m.CursorAt(0x1122)
+				m.Write(0xff)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0xfd)
+			},
+		},
+		{
+			desc: "SET 1,A",
+			cpu:  CPU{A: 0x00},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SET 1,A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x02)
+			},
+		},
+		{
+			desc: "SET 1,(HL)",
+			cpu: CPU{
+				H: 0x11,
+				L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SET 1,(HL)")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0x02)
+			},
+		},
+		{
+			desc: "SRL A",
+			cpu: CPU{
+				A: 0xff,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SRL A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x7f)
+				cpu.ExpectFlagCarry()
+			},
+		},
+		{
+			desc: "SRL (HL)",
+			cpu: CPU{
+				H: 0x11, L: 0x22,
+			},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SRL (HL)")
+				m.CursorAt(0x1122)
+				m.Write(0xff)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0x7f)
+				cpu.ExpectFlagCarry()
+			},
+		},
+		{
+			desc: "SRL A zero-flag",
+			cpu:  CPU{A: 0x01},
+			initMem: func(m *Memory) {
+				m.Write("PREFIX", "SRL A")
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectA(0x00)
+				cpu.ExpectFlagCarry()
+				cpu.ExpectFlagZero()
+			},
+		},
 	}
 
 	initCPU := func(cpu *CPU) {
@@ -895,10 +1025,10 @@ func TestInstructions(t *testing.T) {
 			cpu := &tc.cpu
 			cpu.stopAtnop = true
 			initCPU(cpu)
-			mem := NewMemory()
-			mem.DisableBoot()
+			mem := NewMemory(nil)
 			tc.initMem(mem)
 			mem.Write(INSTR_STOP) // ensure we have a stop instruction at the end
+			mem.DisableBoot()
 			Run(cpu, mem, logger(tc.debug))
 
 			defer func() {
@@ -1047,10 +1177,7 @@ func (cpu *CPUHelper) ExpectFlagHigh() {
 }
 func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
 	cpu.t.Helper()
-	got, ok := cpu.Mem.Access(offset)
-	if !ok {
-		cpu.t.Fatalf("illegal offset %d", offset)
-	}
+	got := cpu.Mem.Read(offset)
 	if got != want {
 		cpu.t.Fatalf("ExpectByte: want=%#x, got=%#x", want, got)
 	}
@@ -1058,14 +1185,8 @@ func (cpu *CPUHelper) ExpectMem(offset uint16, want byte) {
 func (cpu *CPUHelper) ExpectPeekStack(want any) {
 	t := cpu.t
 	// in other words: MSB is the HIGH address, LSB is the LOW address
-	msb, ok := cpu.Mem.Access(cpu.SP + 1)
-	if !ok {
-		t.Fatalf("failed to read msb at %#v", cpu.SP)
-	}
-	lsb, ok := cpu.Mem.Access(cpu.SP)
-	if !ok {
-		t.Fatalf("failed to read lsb at %#v", cpu.SP+1)
-	}
+	msb := cpu.Mem.Read(cpu.SP + 1)
+	lsb := cpu.Mem.Read(cpu.SP)
 	switch want := want.(type) {
 	case uint16:
 		got := concatU16(msb, lsb)
@@ -1081,10 +1202,7 @@ func (cpu *CPUHelper) DumpStack(w io.Writer) {
 	t.Helper()
 	fmt.Fprintln(w, "=== Dumping stack:")
 	for i := uint16(0xffff); i >= cpu.SP; i-- {
-		b, ok := cpu.Mem.Access(i)
-		if !ok {
-			t.Fatalf("failed to read stack at %#x", i)
-		}
+		b := cpu.Mem.Read(i)
 		fmt.Fprintf(w, "  %#04X: %02x\n", i, b)
 	}
 	fmt.Fprintln(w, "=== End of stack dump")

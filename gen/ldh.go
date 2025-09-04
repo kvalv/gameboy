@@ -14,7 +14,7 @@ value := {{get .Rhs .RhsImmediate}}
 {{set .Lhs .LhsImmediate "value"}}
 {{pc .Rhs}}
 cpu.PC = pc0 + 1
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataLdh struct {

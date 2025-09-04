@@ -6,7 +6,7 @@ var templPrefix = template.Must(tmpl.New("prefix").
 	Funcs(template.FuncMap{}).
 	Parse(`
 cpu.prefix = true
-cpu.cycles += 4
+cpu.Cycles += 4
 `))
 
 type templDataPrefix struct{}

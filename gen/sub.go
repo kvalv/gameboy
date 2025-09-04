@@ -13,7 +13,7 @@ res, flags := sub({{get "A" true}}, {{get .Name .Immediate}})
 {{set "A" true "res"}}
 {{pc .Name}}
 cpu.F = flags
-cpu.cycles += {{.CycleCount}}
+cpu.Cycles += {{.CycleCount}}
 `))
 
 type templDataSub struct {
