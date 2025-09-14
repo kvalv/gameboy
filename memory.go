@@ -109,7 +109,7 @@ func (m *Memory) Write(elems ...any) *Memory {
 		switch v := v.(type) {
 		case []byte:
 			for _, b := range v {
-				m.data[m.i] = b
+				m.WriteAt(uint16(m.i), b)
 				m.i++
 			}
 		case []Block:
@@ -119,18 +119,18 @@ func (m *Memory) Write(elems ...any) *Memory {
 		case Block:
 			m.i = int(v.Offset)
 			for _, b := range v.Data {
-				m.data[m.i] = b
+				m.WriteAt(uint16(m.i), b)
 				m.i++
 			}
 		case uint8:
-			m.data[m.i] = v
+			m.WriteAt(uint16(m.i), v)
 			m.i++
 		case int:
-			m.data[m.i] = uint8(v)
+			m.WriteAt(uint16(m.i), uint8(v))
 			m.i++
 		case string:
 			// treat as code..
-			m.data[m.i] = code(v)
+			m.WriteAt(uint16(m.i), code(v))
 			m.i++
 		default:
 			panic(fmt.Sprintf("not implemented for %T", v))
@@ -254,7 +254,7 @@ func (m *Memory) BootActive() bool {
 
 // For testing, we may disable boot and go straight to the cart
 func (m *Memory) DisableBoot() {
-	m.Write(0xFF50, 1)
+	m.WriteAt(0xFF50, 1)
 }
 
 type Block struct {

@@ -237,7 +237,6 @@ func (cpu *CPU) Step() bool {
 		return false // NOP command
 	}
 	if !cpu.prefix && code == 0x10 {
-		fmt.Printf("PC=%4x\n", cpu.PC)
 		cpu.err = ErrNoMoreInstructions
 		return false
 	}

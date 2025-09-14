@@ -35,8 +35,9 @@ func New(data []byte, log ...*slog.Logger) Cartridge {
 		mbc = &MBC0{}
 	case Type1:
 		mbc = &MBC1{log: lg}
-	default:
-		panic(fmt.Sprintf("unknown MBC type: %d", tp))
+	case Type3:
+		fmt.Printf("warning: MBC3 not implemented, using MBC1 instead\n")
+		mbc = &MBC1{log: lg}
 	}
 
 	if len(rom) == 0 {

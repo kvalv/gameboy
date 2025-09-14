@@ -79,6 +79,14 @@ func TestParts(t *testing.T) {
 				dir:       0,
 				currFlags: FLAGC,
 				circular:  false,
+				want:      0b11000001,
+				wantCarry: true,
+			},
+			{
+				n:         uint8(0b11100000),
+				dir:       0,
+				currFlags: 0,
+				circular:  false,
 				want:      0b11000000,
 				wantCarry: true,
 			},
@@ -99,10 +107,10 @@ func TestParts(t *testing.T) {
 				wantCarry: true,
 			},
 		}
-		for _, tc := range cases {
+		for i, tc := range cases {
 			got, fl := rotate(tc.n, tc.dir, tc.currFlags, tc.circular)
 			if got != tc.want {
-				t.Fatalf("rotate(n, %d, %#b, %t) expect=%b, got=%b", tc.dir, uint8(tc.currFlags), tc.circular, tc.want, got)
+				t.Fatalf("%d: rotate(%b, %d, %#b, %t) expect=%b, got=%b", i, tc.n, tc.dir, uint8(tc.currFlags), tc.circular, tc.want, got)
 			}
 			gotCarry := (Flags(fl) & FLAGC) > 0
 			if gotCarry != tc.wantCarry {

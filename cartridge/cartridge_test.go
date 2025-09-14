@@ -28,7 +28,5 @@ func TestTitle(t *testing.T) {
 func TestTetris(t *testing.T) {
 	req := require.New(t)
 	cart := New(TETRIS)
-	req.Equal(Type0, cart.rom.Title())
-	req.Equal(32*kB, cart.rom.Title())
-	req.Equal(uint(0), cart.rom.Title())
+	req.Equal("TETRIS", cart.rom.Title())
 }

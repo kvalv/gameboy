@@ -219,16 +219,6 @@ func TestInstructions(t *testing.T) {
 			},
 		},
 		{
-			desc: "LD BC,n16 0x01",
-			cpu:  CPU{},
-			initMem: func(m *Memory) {
-				m.Write(0x01, 0x11, 0x22, INSTR_STOP)
-			},
-			check: func(t *testing.T, cpu *CPUHelper) {
-				cpu.ExpectBC(0x1122)
-			},
-		},
-		{
 			desc: "LD B,n8 0x06",
 			cpu:  CPU{},
 			initMem: func(m *Memory) {
@@ -236,19 +226,6 @@ func TestInstructions(t *testing.T) {
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
 				cpu.ExpectB(0xab)
-			},
-		},
-		{
-			desc: "LD (a16),SP 0x08",
-			cpu: CPU{
-				SP: 0x3344,
-			},
-			initMem: func(m *Memory) {
-				m.Write(0x08, 0x11, 0x22, INSTR_STOP)
-			},
-			check: func(t *testing.T, cpu *CPUHelper) {
-				cpu.ExpectMem(0x1122, 0x44) // lsb
-				cpu.ExpectMem(0x1123, 0x33) // msb
 			},
 		},
 		{
@@ -1007,9 +984,35 @@ func TestInstructions(t *testing.T) {
 				m.Write("PREFIX", "SRL A")
 			},
 			check: func(t *testing.T, cpu *CPUHelper) {
+				if cpu.err != nil {
+					t.Logf("unexpected error: %v", cpu.err)
+				}
 				cpu.ExpectA(0x00)
 				cpu.ExpectFlagCarry()
 				cpu.ExpectFlagZero()
+			},
+		},
+		{
+			desc: "LD (a16),SP 0x08",
+			cpu: CPU{
+				SP: 0x3344,
+			},
+			initMem: func(m *Memory) {
+				m.Write(0x08, 0x22, 0x11, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectMem(0x1122, 0x44) // lsb
+				cpu.ExpectMem(0x1123, 0x33) // msb
+			},
+		},
+		{
+			desc: "LD BC,n16 0x01",
+			cpu:  CPU{},
+			initMem: func(m *Memory) {
+				m.Write(0x01, 0x22, 0x11, INSTR_STOP)
+			},
+			check: func(t *testing.T, cpu *CPUHelper) {
+				cpu.ExpectBC(0x1122)
 			},
 		},
 	}
@@ -1026,9 +1029,10 @@ func TestInstructions(t *testing.T) {
 			cpu.stopAtnop = true
 			initCPU(cpu)
 			mem := NewMemory(nil)
+			mem.DisableBoot()
 			tc.initMem(mem)
 			mem.Write(INSTR_STOP) // ensure we have a stop instruction at the end
-			mem.DisableBoot()
+
 			Run(cpu, mem, logger(tc.debug))
 
 			defer func() {
